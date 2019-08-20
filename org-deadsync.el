@@ -3,11 +3,8 @@
 ;; Copyright (C) 2019 Jeff Filipovits
 
 ;; Author: Jeff Filipovits <jrfilipovits@gmail.com>
-;; URL: 
-;; Version: 0.1-pre
-;; Author: Jeff Filipovits <jrfilipovits@gmail.com>
 ;; Url: https://github.com/legalnonsense/elgantt
-;; Version: 0.1
+;; Version: 0.1-pre
 ;; Package-Requires: ((emacs "26.1") (org "9.0") (s "1.12.0") (org-ql "0.2-pre") (ts.el "0.2-pre"))
 ;; Keywords: Org, agenda, calendar, deadline, link
 
@@ -106,8 +103,6 @@
 				"2021-01-01" "2021-01-18" "2021-02-15" "2021-05-31" "2021-07-05"
 				"2021-09-06" "2021-10-11" "2021-11-11" "2021-11-25" "2021-12-24"))
 
-(setq org-deadsync-skip-dates '())
-
 ;;;; Functions
 
 (defun org-deadsync--ts-adjust (&rest adjustments)
@@ -148,8 +143,9 @@
     (org-deadline nil deadline)))
 
 
+;; Apologies to the reader for the ifs and progns
 (defun org-deadsync-org-shiftdown ()
-  "Stand-in for org-shiftright to deal with locked deadlines"
+  "Stand-in for org-shiftdown to deal with locked deadlines"
   (interactive)
   ;; If at a deadline timestamp...
   (if (and (org-at-timestamp-p 'agenda)
@@ -166,7 +162,7 @@
     (org-deadsync-refresh-dependents)))
 
 (defun org-deadsync-org-shiftup ()
-  "Stand-in for org-shiftright to deal with locked deadlines"
+  "Stand-in for org-shiftup to deal with locked deadlines"
   (interactive)
   ;; If at a deadline timestamp...
   (if (and (org-at-timestamp-p 'agenda)
@@ -181,24 +177,6 @@
   (org-shiftup)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
-
-(defun org-deadsync-org-shiftdown ()
-  "Stand-in for org-shiftright to deal with locked deadlines"
-  (interactive)
-  ;; If at a deadline timestamp...
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	;;If the deadline link is active, prompt to deactivate
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
-  (org-shiftdown)
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
-
 
 (defun org-deadsync-org-shiftright ()
   "Stand-in for org-shiftright to deal with locked deadlines"
@@ -268,14 +246,29 @@
       (re-search-backward "^\\*+[[:space:]]")
       (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
       (let ((inhibit-read-only t))
-	(put-text-property (match-beginning 0) (match-end 0) 'read-only t-or-nil))
-      (if t-or-nil
-	  (progn
-	    (when org-deadsync-face-attrs
-	      (overlay-put (make-overlay (match-beginning 0) (match-end 0)) 'face org-deadsync-face-attrs))
-	    (when org-deadsync-lock-icon
-	      (overlay-put (make-overlay (match-beginning 0) (match-end 0)) 'after-string org-deadsync-lock-icon)))
-	(remove-overlays (match-beginning 0) (+ (length org-deadsync-lock-icon) (match-end 0)))))))
+	(put-text-property (match-beginning 0) (match-end 0) 'read-only t-or-nil)
+	(if t-or-nil
+	    (overlay-put (make-overlay (match-beginning 0) (match-end 0)) 'after-string org-deadsync-lock-icon)
+	  (remove-overlays (match-beginning 0) (match-end 0) 'after-string org-deadsync-lock-icon))))))
+	    
+;;; Replaced by previous function.
+
+;; (defun org-deadsync--lock-deadline (t-or-nil)
+;;   "Make deadline in current heading read-only if argument is non-nil"
+;;   (save-excursion
+;;     (when (org-get-deadline-time (point))
+;;       (end-of-visual-line)
+;;       (re-search-backward "^\\*+[[:space:]]")
+;;       (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+;;       (let ((inhibit-read-only t))
+;; 	(put-text-property (match-beginning 0) (match-end 0) 'read-only t-or-nil))
+;;       (if t-or-nil
+;; 	  (progn
+;; 	    (when org-deadsync-face-attrs
+;; 	      (overlay-put (make-overlay (match-beginning 0) (match-end 0)) 'face org-deadsync-face-attrs))
+;; 	    (when org-deadsync-lock-icon
+;; 	      (overlay-put (make-overlay (match-beginning 0) (match-end 0)) 'after-string org-deadsync-lock-icon)))
+;; 	(remove-overlays (match-beginning 0) (+ (length org-deadsync-lock-icon) (match-end 0)))))))
 
 (defun org-deadsync-remove-dependency ()
   "Removes the dependency for the current heading"
@@ -361,6 +354,13 @@
 	    (t timestamp))
     timestamp))
   
+(defun org-deadsync--lock-all (t-or-nil)
+  (interactive)
+  (org-ql-select org-deadsync-files
+    '(property "ORG-DEADSYNC-ACTIVE" "t")
+    :action (lambda ()
+	      (org-deadsync--lock-deadline t-or-nil))))
+
 (defun org-deadsync--skip-date-adjust (timestamp)
   "Adjust deadline to next day if deadline falls on a holiday"
   (if (member (ts-format "%Y-%m-%d" timestamp) org-deadsync-skip-dates)
@@ -403,6 +403,8 @@ _q_ Quit
   ("r" org-deadsync-refresh)
   ("q" nil))
 
+
+
 (defun org-deadsync-mode (&optional arg)
   "Enable deadline-dependency mode"
   (interactive)
@@ -410,20 +412,17 @@ _q_ Quit
 
   (if org-deadsync-mode
       (org-deadsync-refresh-all)
-    (org-ql-select org-deadsync-files
-      '(property "ORG-DEADSYNC-ACTIVE" "t")
-      :action (lambda ()
-		(org-deadsync--lock-deadline nil)))))
+    (org-deadsync--lock-all nil)))
   
 (if (not (assq 'org-deadsync-mode minor-mode-alist))
     (setq minor-mode-alist
-	  (cons '(org-deadsync-mode " ORG-DEADSYNC")
+	  (cons '(org-deadsync-mode " DEADSYNC")
 		minor-mode-alist)))
 
 ;;;###autoload
 (define-minor-mode org-deadsync-mode
   "Create deadline dependencies for org headings"
-  :lighter " ORG-DEADSYNC"
+  :lighter " DEADSYNC"
   :keymap (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
 	    (define-key org-deadsync-mode-keymap (kbd "<S-right>") 'org-deadsync-org-shiftright)
 	    (define-key org-deadsync-mode-keymap (kbd "<S-up>") 'org-deadsync-org-shiftup)
