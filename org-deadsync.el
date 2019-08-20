@@ -89,8 +89,9 @@
 (defvar org-deadsync-face-attrs nil
   "plist of face attributes for displaying locked deadlines, e.g., '(:background \"gray\")")
 
-(defvar org-deadsync-lock-icon " ⚷"
+(defvar org-deadsync-lock-icon "⚷"
   "Icon displayed after locked deadlines")
+
 
 (defvar org-deadsync-skip-dates '()
   "List of dates (\"YYYY-MM-DD\" to exclude as possible deadlines, e.g., holidays, birthdays")
@@ -256,7 +257,9 @@
 	      (overlay-put (make-overlay start end) 'after-string org-deadsync-lock-icon)
 	    (remove-overlays start end 'after-string org-deadsync-lock-icon))
 	  (put-text-property start end 'read-only t-or-nil))))))
-	    
+
+
+
 ;;; Replaced by previous function.
 
 ;; (defun org-deadsync--lock-deadline (t-or-nil)
@@ -382,7 +385,6 @@
 	  (org-set-property "ORG-DEADSYNC-ACTIVE" "nil")
 	  (org-deadsync--lock-deadline nil))
       (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
-      (org-deadsync--lock-deadline t)
       (org-deadsync-refresh-this-heading)
       (org-deadsync-refresh-dependents))))
 
@@ -408,8 +410,6 @@ _q_ Quit
   ("k" org-deadsync-remove-dependency)
   ("r" org-deadsync-refresh)
   ("q" nil))
-
-
 
 (defun org-deadsync-mode (&optional arg)
   "Enable deadline-dependency mode"
