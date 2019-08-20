@@ -131,13 +131,13 @@
 			    (ts-format "<%Y-%m-%d %a>"))))
     (org-deadsync--lock-deadline nil)
     (org-deadline nil new-deadline)
-    (org-deadsync--lock-deadline t))) 
+    (org-deadsync--lock-deadline t)))
 
 
 (defun org-deadsync--set-deadline (deadline)
   "Set or update the deadline at current heading"
   (if (org-deadsync--deadline-read-only-p)
-      (progn (org-deadsync--lock-deadline nil)
+      (progn (org-deadsync--deadline nil)
 	     (org-deadline nil deadline)
 	     (org-deadsync--lock-deadline t))
     (org-deadline nil deadline)))
@@ -152,46 +152,13 @@
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
       (progn 
-	;;If the deadline link is active, prompt to deactivate
+	;;If the deadline link is active, and prompt to deactivate
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
 	;;If a master deadline is updated, update dependents
   (org-shiftdown)
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
-
-(defun org-deadsync-org-shiftup ()
-  "Stand-in for org-shiftup to deal with locked deadlines"
-  (interactive)
-  ;; If at a deadline timestamp...
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	;;If the deadline link is active, prompt to deactivate
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
-  (org-shiftup)
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
-
-(defun org-deadsync-org-shiftright ()
-  "Stand-in for org-shiftright to deal with locked deadlines"
-  (interactive)
-  ;; If at a deadline timestamp...
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	;;If the deadline link is active, prompt to deactivate
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
-  (org-shiftright)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
 
@@ -203,12 +170,49 @@
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
       (progn 
-	;;If the deadline link is active, prompt to deactivate
+	;;If the deadline link is active, and prompt to deactivate
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
 	;;If a master deadline is updated, update dependents
   (org-shiftleft)
+  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+    (org-deadsync-refresh-dependents)))
+
+(defun org-deadsync-org-shiftright ()
+  "Stand-in for org-shiftright to deal with locked deadlines"
+  (interactive)
+  ;; If at a deadline timestamp...
+  (if (and (org-at-timestamp-p 'agenda)
+	   (save-excursion (beginning-of-line)
+			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+      (progn 
+	;;If the deadline link is active, and prompt to deactivate
+	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+		 (get-text-property (point) 'read-only)
+		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+	    (org-deadsync-toggle-active))))
+	;;If a master deadline is updated, update dependents
+  (org-shiftright)
+  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+    (org-deadsync-refresh-dependents)))
+
+(defun org-deadsync-org-shiftup ()
+  "Stand-in for org-shiftup to deal with locked deadlines"
+  (interactive)
+  ;; If at a deadline timestamp...
+  (if (and (org-at-timestamp-p 'agenda)
+	   (save-excursion (beginning-of-line)
+			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+      (progn 
+	;;If the deadline link is active, and prompt to deactivate
+	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+		 (get-text-property (point) 'read-only)
+		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+	    (org-deadsync-toggle-active))))
+	;;If a master deadline is updated, update dependents
+  (org-shiftup)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
 
@@ -244,12 +248,14 @@
     (when (org-get-deadline-time (point))
       (end-of-visual-line)
       (re-search-backward "^\\*+[[:space:]]")
-      (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
-      (let ((inhibit-read-only t))
-	(put-text-property (match-beginning 0) (match-end 0) 'read-only t-or-nil)
-	(if t-or-nil
-	    (overlay-put (make-overlay (match-beginning 0) (match-end 0)) 'after-string org-deadsync-lock-icon)
-	  (remove-overlays (match-beginning 0) (match-end 0) 'after-string org-deadsync-lock-icon))))))
+      (when (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+	(let ((inhibit-read-only t)
+	      (start (match-beginning 0))
+	      (end (match-end 0)))
+	  (if t-or-nil
+	      (overlay-put (make-overlay start end) 'after-string org-deadsync-lock-icon)
+	    (remove-overlays start end 'after-string org-deadsync-lock-icon))
+	  (put-text-property start end 'read-only t-or-nil))))))
 	    
 ;;; Replaced by previous function.
 
