@@ -239,9 +239,7 @@
 
 (defun org-deadsync--toggle-lock ()
   "Use org-deadsync--toggle-active."
-  (if (org-deadsync-deadline-locked-p)
-      (org-deadsync--lock-deadline nil)
-    (org-deadsync-lock-deadline t)))
+  (org-deadsync--lock-deadline (not (org-deadsync-deadline-locked-p))))
 
 (defun org-deadsync--lock-deadline (t-or-nil)
   "Make deadline in current heading read-only if argument is non-nil"
@@ -255,7 +253,9 @@
 	      (end (match-end 0)))
 	  (if t-or-nil
 	      (overlay-put (make-overlay start end) 'after-string org-deadsync-lock-icon)
-	    (remove-overlays start end 'after-string org-deadsync-lock-icon))
+	    (remove-overlays (save-excursion (beginning-of-line) (point))
+			     (save-excursion (end-of-line) (point))
+			     'after-string org-deadsync-lock-icon))
 	  (put-text-property start end 'read-only t-or-nil))))))
 
 
