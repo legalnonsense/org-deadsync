@@ -316,7 +316,7 @@
 
 (defun org-deadsync-refresh-this-heading ()
   (interactive)
-  (when-let* ((master-deadline (save-excursion
+  (let* ((master-deadline (save-excursion
 			    (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
 			    (ts-parse-org (org-entry-get (point) "DEADLINE"))))
 	 (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
