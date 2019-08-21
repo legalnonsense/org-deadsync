@@ -72,6 +72,7 @@
 (require 'org-ql)
 (require 'org-id)
 (require 'hydra)
+(require 'ov)
 
 ;;;; Customization
 
