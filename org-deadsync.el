@@ -81,8 +81,6 @@
 (defvar org-deadsync-files (org-agenda-files)
   "Files with linked deadlines. Defaults to all agenda files.")
 
-(setq org-deadsync-files "~/Desktop/temp.org")
-
 (defvar org-deadsync-locked-deadline-text-properties '()
   "plist of text properties to apply to locked deadlines.")
 
@@ -92,17 +90,8 @@
 (defvar org-deadsync-lock-icon "⚷"
   "Icon displayed after locked deadlines")
 
-
 (defvar org-deadsync-skip-dates '()
   "List of dates (\"YYYY-MM-DD\" to exclude as possible deadlines, e.g., holidays, birthdays.")
-
-;;my customized skip dates, which are federal holidays
-(setq org-deadsync-skip-dates '("2019-01-01" "2019-01-21" "2019-02-18" "2019-05-27" "2019-07-04"
-				"2019-09-02" "2019-10-14" "2019-11-14" "2019-11-28" "2019-12-25"
-				"2020-01-01" "2020-01-20" "2020-02-17" "2020-05-25" "2020-07-03"
-				"2020-09-07" "2020-10-12" "2020-11-11" "2020-11-26" "2020-12-25"
-				"2021-01-01" "2021-01-18" "2021-02-15" "2021-05-31" "2021-07-05"
-				"2021-09-06" "2021-10-11" "2021-11-11" "2021-11-25" "2021-12-24"))
 
 ;;;; Functions
 
