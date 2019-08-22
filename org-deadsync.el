@@ -88,9 +88,6 @@
 (defcustom org-deadsync-files (org-agenda-files)
   "Files with linked deadlines. Defaults to all agenda files.")
 
-(defcustom org-deadsync-locked-deadline-text-properties '()
-  "plist of text properties to apply to locked deadlines.")
-
 (defcustom org-deadsync-lock-icon ""
   "Icon displayed after locked deadlines")
 
