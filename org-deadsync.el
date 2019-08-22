@@ -83,7 +83,7 @@
   :group 'org-deadsync)
 
 (defcustom org-deadsync-weekend-adjustment t
-  "Moves a deadline that falls on the weekend to the next weekday.")
+  "If t, moves any deadline that falls on the weekend to the next weekday.")
 
 (defcustom org-deadsync-files (org-agenda-files)
   "Files with linked deadlines. Defaults to all agenda files.")
@@ -95,7 +95,7 @@
   "Icon displayed after master deadlines.")
 
 (defcustom org-deadsync-skip-dates '()
-  "List of dates (\"YYYY-MM-DD\" to exclude as possible deadlines, e.g., holidays, birthdays.")
+  "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays.")
 
 ;;;; Functions
 
@@ -120,22 +120,17 @@
 	     (org-deadsync--lock-deadline t))
     (org-deadline nil deadline)))
 
-
-;; Apologies to the reader for the ifs and progns
 (defun org-deadsync-org-shiftdown ()
   "Stand-in for org-shiftdown to deal with locked deadlines."
   (interactive)
-  ;; If at a deadline timestamp...
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
       (progn 
-	;;If the deadline link is active, and prompt to deactivate
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
 		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
   (org-shiftdown)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
@@ -143,17 +138,14 @@
 (defun org-deadsync-org-shiftleft ()
   "Stand-in for org-shiftleft to deal with locked deadlines"
   (interactive)
-  ;; If at a deadline timestamp...
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
       (progn 
-	;;If the deadline link is active, and prompt to deactivate
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
 		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
   (org-shiftleft)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
@@ -161,17 +153,14 @@
 (defun org-deadsync-org-shiftright ()
   "Stand-in for org-shiftright to deal with locked deadlines."
   (interactive)
-  ;; If at a deadline timestamp...
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
       (progn 
-	;;If the deadline link is active, and prompt to deactivate
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
 		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
   (org-shiftright)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
@@ -179,17 +168,14 @@
 (defun org-deadsync-org-shiftup ()
   "Stand-in for org-shiftup to deal with locked deadlines."
   (interactive)
-  ;; If at a deadline timestamp...
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
       (progn 
-	;;If the deadline link is active, and prompt to deactivate
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
 		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
-	;;If a master deadline is updated, update dependents
   (org-shiftup)
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
