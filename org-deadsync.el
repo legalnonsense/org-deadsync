@@ -76,25 +76,28 @@
 
 ;;;; Customization
 
-(defvar org-deadsync-weekend-adjustment t
+(defgroup org-deadsync nil
+  "Options for org-deadsync."
+  :tag "org-deadsync"
+  :group 'org
+  :group 'org-deadsync)
+
+(defcustom org-deadsync-weekend-adjustment t
   "Moves a deadline that falls on the weekend to the next weekday.")
 
-(defvar org-deadsync-files (org-agenda-files)
+(defcustom org-deadsync-files (org-agenda-files)
   "Files with linked deadlines. Defaults to all agenda files.")
 
-(defvar org-deadsync-locked-deadline-text-properties '()
+(defcustom org-deadsync-locked-deadline-text-properties '()
   "plist of text properties to apply to locked deadlines.")
 
-(defvar org-deadsync-face-attrs nil
-  "plist of face attributes for displaying locked deadlines, e.g., '(:background \"gray\").")
-
-(defvar org-deadsync-lock-icon ""
+(defcustom org-deadsync-lock-icon ""
   "Icon displayed after locked deadlines")
 
-(defvar org-deadsync-master-icon "⚷"
+(defcustom org-deadsync-master-icon "⚷"
   "Icon displayed after master deadlines.")
 
-(defvar org-deadsync-skip-dates '()
+(defcustom org-deadsync-skip-dates '()
   "List of dates (\"YYYY-MM-DD\" to exclude as possible deadlines, e.g., holidays, birthdays.")
 
 ;;;; Functions
@@ -383,6 +386,10 @@
       (org-deadsync-refresh-this-heading)
       (org-deadsync-refresh-dependents))))
 
+(defun org-deadsync-clear-overlays ()
+  (ov-clear 'after-string org-deadsync-lock-icon (point-min) (point-max))
+  (ov-clear 'after-string org-deadsync-master-icon (point-min) (point-max)))
+
 (defvar org-deadsync-mode nil
   "Mode variable for org-deadsync-mode")
 (make-variable-buffer-local 'org-deadsync-mode)
@@ -391,29 +398,31 @@
   "
 Org Deadline Dependencies:
 
-_s_ Set dependence           _j_ Jump to master deadline  _T_ Turn off minor mode
-_k_ Remove dependency        _e_ Echo master information  _t_ Toggel syncing on off for heading
+_s_ Set synced deadline      _j_ Jump to master deadline  _c_ Clear all overlays
+_k_ Remove sync              _e_ Echo master information  _r_ Refresh all deadlines
+_t_ Toggle active sync
+    for this heading
 
-_r_ Refresh
 _q_ Quit
 "
   ("s" org-deadsync-set-dependency)
   ("j" org-deadsync-jump-to-master)
   ("e" org-deadsync-show-master)
-  ("T" org-deadsync-mode)
   ("t" org-deadsync-toggle-active)
   ("k" org-deadsync-remove-dependency)
-  ("r" org-deadsync-refresh)
+  ("r" org-deadsync-refresh-all)
+  ("c" org-deadsync-clear-overlays)
   ("q" nil))
 
-(defun org-deadsync-mode (&optional arg)
+(defun org-deadsync-mode ()
   "Enable deadline-dependency mode"
   (interactive)
   (setq org-deadsync-mode (not org-deadsync-mode))
 
   (if org-deadsync-mode
       (org-deadsync-refresh-all)
-    (org-deadsync--lock-all nil)))
+    (org-deadsync--lock-all nil)
+    (org-deadsync-clear-overlays)))
   
 (if (not (assq 'org-deadsync-mode minor-mode-alist))
     (setq minor-mode-alist
@@ -429,7 +438,7 @@ _q_ Quit
 	    (define-key org-deadsync-mode-keymap (kbd "<S-up>") 'org-deadsync-org-shiftup)
 	    (define-key org-deadsync-mode-keymap (kbd "<S-down>") 'org-deadsync-org-shiftdown)
 	    (define-key org-deadsync-mode-keymap (kbd "<S-left>") 'org-deadsync-org-shiftleft)
-	    (define-key org-deadsync-mode-keymap (kbd "C-c d d") 'org-deadsync--hydra/body)
+	    (define-key org-deadsync-mode-keymap (kbd "C-; d d") 'org-deadsync--hydra/body)
 	    org-deadsync-mode-keymap))
 
 (provide 'org-deadsync)
