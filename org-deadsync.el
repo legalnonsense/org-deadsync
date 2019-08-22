@@ -88,8 +88,11 @@
 (defvar org-deadsync-face-attrs nil
   "plist of face attributes for displaying locked deadlines, e.g., '(:background \"gray\").")
 
-(defvar org-deadsync-lock-icon "⚷"
+(defvar org-deadsync-lock-icon ""
   "Icon displayed after locked deadlines")
+
+(defvar org-deadsync-master-icon "⚷"
+  "Icon displayed after master deadlines.")
 
 (defvar org-deadsync-skip-dates '()
   "List of dates (\"YYYY-MM-DD\" to exclude as possible deadlines, e.g., holidays, birthdays.")
@@ -268,8 +271,8 @@
   (let ((master-deadline nil)
 	(master-id nil)
 	(offset (read-string "Enter offset: ")))
-    (when (not (and (string= (substring offset 0) "+")
-		   (string= (substring offset 0) "-")))
+    (when (not (or (string= (substring offset 0) "+")
+ 		    (string= (substring offset 0) "-")))
       (setq offset (concat "+" offset)))
     (save-excursion 
       (org-goto)
@@ -279,29 +282,53 @@
       (setq master-id (cadr (org-entry-properties (point) "ID")))
       (when (not master-id)
 	(setq master-id (org-id-get-create)))
-      (org-set-property "ORG-DEADSYNC-MASTER" "t"))
+      (org-set-property "ORG-DEADSYNC-MASTER" "t")
+      (org-deadsync--set-master-icon))
   (org-set-property "ORG-DEADSYNC-LINK" master-id)
   (org-set-property "ORG-DEADSYNC-OFFSET" offset)
   (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
-  (org-deadline nil "2019-01-01") ; dummy deadline
+  (org-deadline nil "2000-01-01") ; dummy deadline
   (org-deadsync--lock-deadline t)
   (org-deadsync-refresh-this-heading)))
+
+(defun org-deadsync--set-master-icon ()
+  "Set the master icon in current heading if needed."
+  (interactive)
+  (save-excursion
+    (when (org-get-deadline-time (point))
+      (end-of-visual-line)
+      (re-search-backward "^\\*+[[:space:]]")
+      (when (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+	(let ((inhibit-read-only t)
+	      (start (match-beginning 0))
+	      (end (match-end 0)))
+	  (if (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
+	      (progn
+		(beginning-of-line)
+		(ov-clear 'after-string org-deadsync-master-icon (point) (save-excursion (end-of-line) (point)))
+		(ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
+				   'after-string org-deadsync-master-icon))
+	    (beginning-of-line)
+	    (ov-clear 'after-string org-deadsync-master-icon (point) (save-excursion (end-of-line) (point)))))))))
 
 (defun org-deadsync-refresh-all ()
   (interactive)
   (org-ql-select org-deadsync-files
     '(property "ORG-DEADSYNC-MASTER" "t")
-    :action (lambda () (org-deadsync-refresh-dependents))))
+    :action (lambda ()
+	      (org-deadsync-refresh-dependents))))
 
 (defun org-deadsync-refresh-dependents ()
   (interactive)
   (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
+    (org-deadsync--set-master-icon)
     (let ((master-id (org-entry-get (point) "ID")))
       (org-ql-select org-deadsync-files
 	`(and (property "ORG-DEADSYNC-LINK" ,master-id)
 	      (property "ORG-DEADSYNC-ACTIVE" "t"))
 	:action (lambda ()
 		  (org-deadsync-refresh-this-heading)
+;		  (org-deadsync--set-master-icon)
 		  (org-deadsync-refresh-dependents))))))
 
 (defun org-deadsync-refresh-this-heading ()
@@ -317,7 +344,9 @@
 			    (ts-format "<%Y-%m-%d %a>"))))
     (org-deadsync--lock-deadline nil)
     (org-deadline nil new-deadline)
+;    (org-deadsync--set-master-icon)
     (org-deadsync--lock-deadline t)))
+
 		      
 (defun org-deadsync--weekend-adjust (timestamp)
   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
