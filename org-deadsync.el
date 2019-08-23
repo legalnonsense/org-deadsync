@@ -120,54 +120,24 @@
 	     (org-deadsync--lock-deadline t))
     (org-deadline nil deadline)))
 
-(defun org-deadsync-org-shiftdown ()
-  "Stand-in for org-shiftdown to deal with locked deadlines."
-  (interactive)
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (get-text-property (point) 'read-only)
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-  (org-shiftdown)
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
-
 (defun org-deadsync-org-shiftleft ()
-  "Stand-in for org-shiftleft to deal with locked deadlines"
   (interactive)
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (get-text-property (point) 'read-only)
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-  (org-shiftleft)
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
+  (org-deadsync-org-shiftdirection 'left))
 
 (defun org-deadsync-org-shiftright ()
-  "Stand-in for org-shiftright to deal with locked deadlines."
   (interactive)
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (get-text-property (point) 'read-only)
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-  (org-shiftright)
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
+  (org-deadsync-org-shiftdirection 'right))
 
 (defun org-deadsync-org-shiftup ()
-  "Stand-in for org-shiftup to deal with locked deadlines."
   (interactive)
+  (org-deadsync-org-shiftdirection 'up))
+
+(defun org-deadsync-org-shiftdown ()
+    (interactive)
+  (org-deadsync-org-shiftdirection 'down))
+
+(defun org-deadsync-org-shiftdirection (direction)
+  "Stand-in for org-shiftleft, etc."
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
@@ -176,9 +146,73 @@
 		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
-  (org-shiftup)
+  (cond ((eq direction 'down) (org-shiftdown))
+	((eq direction 'up) (org-shiftup))
+	((eq direction 'left) (org-shiftleft))
+	((eq direction 'right) (org-shiftright)))
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
+  
+
+;; (defun org-deadsync-org-shiftdown ()
+;;   "Stand-in for org-shiftdown to deal with locked deadlines."
+;;   (interactive)
+;;   (if (and (org-at-timestamp-p 'agenda)
+;; 	   (save-excursion (beginning-of-line)
+;; 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+;;       (progn 
+;; 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+;; 		 (get-text-property (point) 'read-only)
+;; 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+;; 	    (org-deadsync-toggle-active))))
+;;   (org-shiftdown)
+;;   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+;;     (org-deadsync-refresh-dependents)))
+
+;; (defun org-deadsync-org-shiftleft ()
+;;   "Stand-in for org-shiftleft to deal with locked deadlines"
+;;   (interactive)
+;;   (if (and (org-at-timestamp-p 'agenda)
+;; 	   (save-excursion (beginning-of-line)
+;; 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+;;       (progn 
+;; 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+;; 		 (get-text-property (point) 'read-only)
+;; 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+;; 	    (org-deadsync-toggle-active))))
+;;   (org-shiftleft)
+;;   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+;;     (org-deadsync-refresh-dependents)))
+
+;; (defun org-deadsync-org-shiftright ()
+;;   "Stand-in for org-shiftright to deal with locked deadlines."
+;;   (interactive)
+;;   (if (and (org-at-timestamp-p 'agenda)
+;; 	   (save-excursion (beginning-of-line)
+;; 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+;;       (progn 
+;; 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+;; 		 (get-text-property (point) 'read-only)
+;; 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+;; 	    (org-deadsync-toggle-active))))
+;;   (org-shiftright)
+;;   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+;;     (org-deadsync-refresh-dependents)))
+
+;; (defun org-deadsync-org-shiftup ()
+;;   "Stand-in for org-shiftup to deal with locked deadlines."
+;;   (interactive)
+;;   (if (and (org-at-timestamp-p 'agenda)
+;; 	   (save-excursion (beginning-of-line)
+;; 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+;;       (progn 
+;; 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+;; 		 (get-text-property (point) 'read-only)
+;; 		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+;; 	    (org-deadsync-toggle-active))))
+;;   (org-shiftup)
+;;   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+;;     (org-deadsync-refresh-dependents)))
 
 (defun org-deadsync--dependentsp ()
   "Does the current heading have dependents?"
@@ -210,6 +244,7 @@
       (when (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
 	(let ((inhibit-read-only t)
 	      (start (match-beginning 0))
+;;this should be changed to (end (save-excursion (end-of-line) (point)))
 	      (end (match-end 0)))
 	  (if t-or-nil
 	      (progn
@@ -232,7 +267,9 @@
       (save-excursion
 	(org-id-goto master-id)
 	(unless (org-deadsync--dependentsp)
-	    (org-delete-property "ORG-DEADSYNC-MASTER"))))))
+	  (org-delete-property "ORG-DEADSYNC-MASTER")
+	  (org-deadsync-refresh-this-heading))))))
+
 
 (defun org-deadsync-jump-to-master ()
   "Jump directly to the master deadline" 
@@ -397,15 +434,12 @@ _q_ Quit
   ("c" org-deadsync-clear-overlays)
   ("q" nil))
 
-(defun org-deadsync-mode ()
-  "Enable deadline-dependency mode"
-  (interactive)
-  (setq org-deadsync-mode (not org-deadsync-mode))
+;; (defun org-deadsync-mode ()
+;;   "Enable deadline-dependency mode"
+;;   (interactive)
+;;   (setq org-deadsync-mode (not org-deadsync-mode))
 
-  (if org-deadsync-mode
-      (org-deadsync-refresh-all)
-    (org-deadsync--lock-all nil)
-    (org-deadsync-clear-overlays)))
+
   
 (if (not (assq 'org-deadsync-mode minor-mode-alist))
     (setq minor-mode-alist
@@ -415,15 +449,20 @@ _q_ Quit
 ;;;###autoload
 (define-minor-mode org-deadsync-mode
   "Create deadline dependencies for org headings"
-  :lighter " DEADSYNC"
-  :keymap (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
+  nil
+  " DEADSYNC"
+  (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
 	    (define-key org-deadsync-mode-keymap (kbd "<S-right>") 'org-deadsync-org-shiftright)
 	    (define-key org-deadsync-mode-keymap (kbd "<S-up>") 'org-deadsync-org-shiftup)
 	    (define-key org-deadsync-mode-keymap (kbd "<S-down>") 'org-deadsync-org-shiftdown)
 	    (define-key org-deadsync-mode-keymap (kbd "<S-left>") 'org-deadsync-org-shiftleft)
 	    (define-key org-deadsync-mode-keymap (kbd "C-; d d") 'org-deadsync--hydra/body)
-	    org-deadsync-mode-keymap))
-
+	    org-deadsync-mode-keymap)
+  (if org-deadsync-mode
+      (org-deadsync-refresh-all)
+    (org-deadsync--lock-all nil)
+    (org-deadsync-clear-overlays)))
+  
 (provide 'org-deadsync)
 
 ;;; org-deadsync.el ends here
