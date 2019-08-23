@@ -466,3 +466,47 @@ _q_ Quit
 (provide 'org-deadsync)
 
 ;;; org-deadsync.el ends here
+
+;;;; new code 
+
+(defun org-deadsync-lock-deadline (t-or-nil))
+
+(defun org-deadsync-place-overlay-this-heading ()
+(defun org-deadsync-clear-all-overlays ()
+  (ov-clear 'after-string org-deadsync-lock-icon)
+  (ov-clear 'after-string org-deadsync-master-icon))
+
+(defun org-deadsync-lock-deadline (t-or-nil)
+  "Make deadline in current heading read-only if argument is non-nil"
+  (interactive)
+  (save-excursion
+    (when (org-get-deadline-time (point))
+      (end-of-visual-line)
+      (re-search-backward "^\\*+[[:space:]]")
+      (when (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+	(let ((inhibit-read-only t)
+	      (start (match-beginning 0))
+	      (end (match-end 0)))
+	  (put-text-property start end 'read-only t-or-nil))))))
+  
+(defun org-deadsync-clear-overlays-this-heading ()
+  (interactive)
+  (let ((start (progn (end-of-visual-line)
+		      (re-search-backward "^\\*+ ")
+		      (point)))
+	(end (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+    (ov-clear 'after-string org-deadsync-lock-icon start end)
+    (ov-clear 'after-string org-deadsync-master-icon start end)))
+
+(defun org-deadsync-place-overlays-this-heading ()
+  (interactive)
+  (let ((start (progn (end-of-visual-line)
+		       (re-search-backward "^\\*+ ")
+		       (point)))
+	(end (save-excursion (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>"))))
+    (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
+      (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
+	      'after-string org-deadsync-lock-icon))
+    (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
+      (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
+	      'after-string org-deadsync-master-icon))))
