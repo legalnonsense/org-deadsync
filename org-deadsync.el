@@ -91,6 +91,8 @@
 (defcustom org-deadsync-lock-icon ?
   "Icon displayed after locked deadlines")
 
+(setq org-deadsync-lock-icon "")
+(setq org-deadsync-master-icon "⚷")
 (defcustom org-deadsync-master-icon ?⚷
   "Icon displayed after master deadlines.")
 
@@ -175,23 +177,31 @@
 	      (start (match-beginning 0))
 	      (end (match-end 0)))
 	  (put-text-property start end 'read-only t-or-nil))))))
-  
+
 (defun org-deadsync-clear-overlays-this-heading ()
   (interactive)
   (let ((start (progn (end-of-visual-line)
 		      (re-search-backward "^\\*+ ")
+		      (forward-line)
 		      (point)))
-	(end (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+	(end (progn
+	       (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+	       (end-of-line)
+	       (point))))
     (ov-clear 'after-string org-deadsync-lock-icon start end)
     (ov-clear 'after-string org-deadsync-master-icon start end)))
+
+xxx
+
 
 (defun org-deadsync-place-overlays-this-heading ()
   (interactive)
   (org-deadsync-clear-overlays-this-heading)
   (let ((start (progn (end-of-visual-line)
-		       (re-search-backward "^\\*+ ")
-		       (point)))
-	(end (save-excursion (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>"))))
+		      (re-search-backward "^\\*+ ")
+		      (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>")
+		      (match-beginning 0)))
+	(end (match-end 0)))
     (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
       (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
 	      'after-string org-deadsync-lock-icon))
@@ -276,6 +286,7 @@
   (org-set-property "ORG-DEADSYNC-OFFSET" offset)
   (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
   (org-deadline nil "2000-01-01") ; dummy deadline
+  (org-deadsync-place-overlays-this-heading)
   (org-deadsync-refresh-this-heading)))
 
 (defun org-deadsync-refresh-all ()
@@ -283,6 +294,7 @@
   (org-ql-select org-deadsync-files
     '(property "ORG-DEADSYNC-MASTER" "t")
     :action (lambda ()
+	      (org-deadsync-refresh-this-heading)
 	      (org-deadsync-refresh-dependents))))
 
 (defun org-deadsync-refresh-dependents ()
@@ -298,7 +310,7 @@
 
 (defun org-deadsync-refresh-this-heading ()
   (interactive)
-  (org-deadsync-clear-overlays-this-heading)
+  (org-deadsync-place-overlays-this-heading)
   (when (org-entry-get (point) "ORG-DEADSYNC-LINK")
     (let* ((master-deadline (save-excursion
 			      (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
@@ -351,6 +363,7 @@
       (org-deadsync-refresh-dependents))))
 
 (defun org-deadsync-clear-overlays ()
+  (interactive)
   (ov-clear 'after-string org-deadsync-lock-icon (point-min) (point-max))
   (ov-clear 'after-string org-deadsync-master-icon (point-min) (point-max)))
 
