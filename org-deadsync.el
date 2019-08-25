@@ -88,15 +88,11 @@
 (defcustom org-deadsync-files (org-agenda-files)
   "Files with linked deadlines. Defaults to all agenda files.")
 
-(defcustom org-deadsync-lock-icon ?
-  "Icon displayed after locked deadlines")
+ (defcustom org-deadsync-lock-icon ""
+   "Icon displayed after locked deadlines")
 
-(defcustom org-deadsync-master-icon ?⚷
-  "Icon displayed after master deadlines.")
-
-;; Not sure which one is better.
-;; (setq org-deadsync-lock-icon "")
-;; (setq org-deadsync-master-icon "⚷")
+ (defcustom org-deadsync-master-icon "⚷"
+   "Icon displayed after master deadlines.")
 
 (defcustom org-deadsync-skip-dates '()
   "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays.")
@@ -218,11 +214,6 @@
 		       (org-entry-get (point) "ITEM") " : DEADLINE: "
 		       (org-entry-get (point) "DEADLINE"))))))
 
-
-(let ((offest (read-string "")))
-  (insert (substring offest 0 1)))-
-
-
 (defun org-deadsync-set-dependency ()
   "Set heading with dependent deadline"
   (interactive)
@@ -275,7 +266,7 @@
   (when (org-entry-get (point) "ORG-DEADSYNC-LINK")
       (progn 
 	(org-deadsync-clear-overlays-this-heading) ;; Important to clear these before performing operations
-	(let* ((master-deadline (save-excursion    ;; otherwise, the overlay will appear in strange places
+	(let* ((master-deadline (save-excursion    ;; otherwise, the overlays will appear in strange places
 				  (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
 				  (ts-parse-org (org-entry-get (point) "DEADLINE"))))
 	       (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
