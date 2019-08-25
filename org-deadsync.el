@@ -120,50 +120,6 @@
 	  adjustments)
     ts))
 
-;; (defun org-deadsync--set-deadline (deadline)
-;;   "Set or update the deadline at current heading"
-;;   (if (org-deadsync--deadline-read-only-p)
-;;       (progn (org-deadsync--deadline nil) 
-;; 	     (org-deadline nil deadline)
-;; 	     (org-deadsync-lock-deadline t))
-;;     (org-deadline nil deadline)))
-
-(defun org-deadsync-org-shiftleft ()
-  (interactive)
-  (org-deadsync-org-shiftdirection 'left))
-
-(defun org-deadsync-org-shiftright ()
-  (interactive)
-  (org-deadsync-org-shiftdirection 'right))
-
-(defun org-deadsync-org-shiftup ()
-  (interactive)
-  (org-deadsync-org-shiftdirection 'up))
-
-(defun org-deadsync-org-shiftdown ()
-    (interactive)
-  (org-deadsync-org-shiftdirection 'down))
-
-(defun org-deadsync-org-shiftdirection (direction)
-  "Stand-in for org-shiftleft, etc."
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
-      (progn 
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (get-text-property (point) 'read-only)
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-  (cond ((eq direction 'down) (org-shiftdown))
-	((eq direction 'up) (org-shiftup))
-	((eq direction 'left) (org-shiftleft))
-	((eq direction 'right) (org-shiftright)))
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
-  
-(defun org-deadsync-clear-all-overlays-in-file ()
-  (ov-clear 'after-string org-deadsync-lock-icon)
-  (ov-clear 'after-string org-deadsync-master-icon))
 
 (defun org-deadsync-lock-deadline (t-or-nil)
   "Make deadline in current heading read-only if argument is non-nil"
@@ -190,9 +146,6 @@
 	       (point))))
     (ov-clear 'after-string org-deadsync-lock-icon start end)
     (ov-clear 'after-string org-deadsync-master-icon start end)))
-
-xxx
-
 
 (defun org-deadsync-place-overlays-this-heading ()
   (interactive)
@@ -312,20 +265,23 @@ xxx
   (interactive)
   (org-deadsync-place-overlays-this-heading)
   (when (org-entry-get (point) "ORG-DEADSYNC-LINK")
-    (let* ((master-deadline (save-excursion
-			      (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
-			      (ts-parse-org (org-entry-get (point) "DEADLINE"))))
-	   (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
-	   (new-deadline (->> master-deadline
-			      (org-deadsync--ts-adjust offset)
-			      (org-deadsync--skip-date-adjust)
-			      (org-deadsync--weekend-adjust)
-			      (ts-format "<%Y-%m-%d %a>"))))
-      (org-deadsync-lock-deadline nil)
-      (org-deadline nil new-deadline)
-      (org-deadsync-place-overlays-this-heading)
-      (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
-	(org-deadsync-lock-deadline t)))))
+      (progn 
+	(org-deadsync-clear-overlays-this-heading) ;; Important to clear these before performing operations
+	(let* ((master-deadline (save-excursion    ;; otherwise, the overlay will appear in strange places
+				  (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
+				  (ts-parse-org (org-entry-get (point) "DEADLINE"))))
+	       (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
+	       (new-deadline (->> master-deadline
+				  (org-deadsync--ts-adjust offset)
+				  (org-deadsync--skip-date-adjust)
+				  (org-deadsync--weekend-adjust)
+				  (ts-format "<%Y-%m-%d %a>"))))
+	  (org-deadsync-lock-deadline nil)
+	  (org-deadline nil new-deadline)
+	  (org-deadsync-place-overlays-this-heading)
+	  (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
+	    (org-deadsync-lock-deadline t))))))
+
 
 (defun org-deadsync--weekend-adjust (timestamp)
   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
@@ -366,6 +322,47 @@ xxx
   (interactive)
   (ov-clear 'after-string org-deadsync-lock-icon (point-min) (point-max))
   (ov-clear 'after-string org-deadsync-master-icon (point-min) (point-max)))
+
+;; (defun org-deadsync-clear-all-overlays-in-file ()
+;;   (ov-clear 'after-string org-deadsync-lock-icon)
+;;   (ov-clear 'after-string org-deadsync-master-icon))
+
+
+(defun org-deadsync-org-shiftdirection (direction)
+  "Substitutes for org-shift<direction> when DEADSYC mode activated."
+  (if (and (org-at-timestamp-p 'agenda)
+	   (save-excursion (beginning-of-line)
+			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+      (progn 
+	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+		 (get-text-property (point) 'read-only)
+		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+	    (org-deadsync-toggle-active))))
+  (cond ((eq direction 'down) (org-shiftdown))
+	((eq direction 'up) (org-shiftup))
+	((eq direction 'left) (org-shiftleft))
+	((eq direction 'right) (org-shiftright)))
+  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+    (org-deadsync-refresh-dependents)))
+
+(defun org-deadsync-org-shiftleft ()
+  (interactive)
+  (org-deadsync-org-shiftdirection 'left))
+
+(defun org-deadsync-org-shiftright ()
+  (interactive)
+  (org-deadsync-org-shiftdirection 'right))
+
+(defun org-deadsync-org-shiftup ()
+  (interactive)
+    (org-deadsync-org-shiftdirection 'up))
+
+(defun org-deadsync-org-shiftdown ()
+  (interactive)
+  (org-deadsync-org-shiftdirection 'down))
+
+
+
 
 
 (defhydra org-deadsync--hydra (:color blue :hint nil)
