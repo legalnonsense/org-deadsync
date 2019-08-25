@@ -91,10 +91,12 @@
 (defcustom org-deadsync-lock-icon ?
   "Icon displayed after locked deadlines")
 
-(setq org-deadsync-lock-icon "")
-(setq org-deadsync-master-icon "⚷")
 (defcustom org-deadsync-master-icon ?⚷
   "Icon displayed after master deadlines.")
+
+;; Not sure which one is better.
+;; (setq org-deadsync-lock-icon "")
+;; (setq org-deadsync-master-icon "⚷")
 
 (defcustom org-deadsync-skip-dates '()
   "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays.")
@@ -216,14 +218,19 @@
 		       (org-entry-get (point) "ITEM") " : DEADLINE: "
 		       (org-entry-get (point) "DEADLINE"))))))
 
+
+(let ((offest (read-string "")))
+  (insert (substring offest 0 1)))-
+
+
 (defun org-deadsync-set-dependency ()
   "Set heading with dependent deadline"
   (interactive)
   (let ((master-deadline nil)
 	(master-id nil)
 	(offset (read-string "Enter offset: ")))
-    (when (not (or (string= (substring offset 0) "+")
- 		    (string= (substring offset 0) "-")))
+    (when (not (or (string= (substring offset 0 1) "+")
+ 		    (string= (substring offset 0 1) "-")))
       (setq offset (concat "+" offset)))
     (save-excursion 
       (org-goto)
@@ -238,8 +245,9 @@
   (org-set-property "ORG-DEADSYNC-LINK" master-id)
   (org-set-property "ORG-DEADSYNC-OFFSET" offset)
   (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
-  (org-deadline nil "2000-01-01") ; dummy deadline
-  (org-deadsync-place-overlays-this-heading)
+  (org-deadsync-lock-deadline nil)
+  (org-deadline nil "2000-01-01") ; dummy deadline in case one is there already
+;  (org-deadsync-place-overlays-this-heading) unnecessary)
   (org-deadsync-refresh-this-heading)))
 
 (defun org-deadsync-refresh-all ()
