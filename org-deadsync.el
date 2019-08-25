@@ -314,9 +314,9 @@
 	(progn 
 	  (org-set-property "ORG-DEADSYNC-ACTIVE" "nil")
 	  (org-deadsync-lock-deadline nil))
-      (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
+      (org-set-property "ORG-DEADSYNC-ACTIVE" "t"))
       (org-deadsync-refresh-this-heading)
-      (org-deadsync-refresh-dependents))))
+      (org-deadsync-refresh-dependents)))
 
 (defun org-deadsync-clear-overlays ()
   (interactive)
