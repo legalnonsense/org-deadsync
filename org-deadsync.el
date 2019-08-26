@@ -105,18 +105,30 @@
 
 ;;;; Functions
 
+;; (defun org-deadsync--ts-adjust (&rest adjustments)
+;;   "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
+;;   (let ((ts (-last-item adjustments))
+;; 	(adjustments (nbutlast adjustments)))
+;;     (-map (lambda (adjustment)
+;; 	    (let ((slot (substring adjustment -1)))
+;; 	      (cond ((string= slot "d") (setq slot 'day))
+;; 		    ((string= slot "m") (setq slot 'month))
+;; 		    ((string= slot "y") (setq slot 'year)))
+;; 	      (setq ts (ts-adjust slot (string-to-number (substring adjustment 0 -1)) ts))))
+;; 	  (split-string (car adjustments) " "))
+;;    ts))
+
 (defun org-deadsync--ts-adjust (&rest adjustments)
   "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
-  (let ((ts (-last-item adjustments))
-	(adjustments (nbutlast adjustments)))
-    (-map (lambda (adjustment)
-	    (let ((slot (substring adjustment -1)))
-	      (cond ((string= slot "d") (setq slot 'day))
-		    ((string= slot "m") (setq slot 'month))
-		    ((string= slot "y") (setq slot 'year)))
-	      (setq ts (ts-adjust slot (string-to-number (substring adjustment 0 -1)) ts))))
-	  adjustments)
-    ts))
+  (let* ((ts (-last-item adjustments))
+	 (adjustments (cl-loop for adj in (split-string (car (nbutlast adjustments)) " ")
+                               for num = (string-to-number (substring adj 0 -1))
+                               for slot = (pcase-exhaustive (substring adj -1)
+                                            ("d" 'day)
+                                            ("m" 'month)
+                                            ("y" 'year))
+                               append (list slot num))))
+    (apply #'ts-adjust (append adjustments (list ts)))))
 
 
 (defun org-deadsync-lock-deadline (t-or-nil)
