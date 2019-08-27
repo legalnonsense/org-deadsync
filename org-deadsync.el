@@ -191,6 +191,7 @@
 	  't nil))))
 
 (defun org-deadsync--toggle-lock ()
+  "Toggle whether the deadline text is locked."
   (org-deadsync-lock-deadline (not (org-deadsync-deadline-locked-p))))
 
 (defun org-deadsync-remove-dependency ()
@@ -277,7 +278,7 @@
   (org-deadsync-place-overlays-this-heading)
   (when (org-entry-get (point) "ORG-DEADSYNC-LINK")
       (progn 
-	(org-deadsync-clear-overlays-this-heading) ;; Important to clear these before performing operations
+	(org-deadsync-clear-overlays-this-heading) ;; Important to clear overlays before changing deadline
 	(let* ((master-deadline (save-excursion    ;; otherwise, the overlays will appear in strange places
 				  (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
 				  (ts-parse-org (org-entry-get (point) "DEADLINE"))))
@@ -292,7 +293,6 @@
 	  (org-deadsync-place-overlays-this-heading)
 	  (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
 	    (org-deadsync-lock-deadline t))))))
-
 
 (defun org-deadsync--weekend-adjust (timestamp)
   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
@@ -372,10 +372,6 @@
   (interactive)
   (org-deadsync-org-shiftdirection 'down))
 
-
-
-
-
 (defhydra org-deadsync--hydra (:color blue :hint nil)
   "
 Org Deadline Dependencies:
@@ -416,7 +412,3 @@ _q_ Quit
 (provide 'org-deadsync)
 
 ;;; org-deadsync.el ends here
-
-;;;; new code 
-
-
