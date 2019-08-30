@@ -373,9 +373,13 @@
 ;;   (ov-clear 'after-string org-deadsync-lock-icon)
 ;;   (ov-clear 'after-string org-deadsync-master-icon))
 
+(defun org-deadsync--clear-all ()
+  "Remove all locks and overlays."
+  (org-deadsync--lock-all nil)
+  (org-deadsync-clear-overlays))
 
 (defun org-deadsync-org-shiftdirection (direction)
-  "Substitutes for org-shift<direction> when DEADSYC mode activated."
+  "Substitutes for org-shift<direction> when DEADSYNC mode activated."
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
 			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
@@ -440,10 +444,15 @@ _q_ Quit
 	    (define-key org-deadsync-mode-keymap (kbd "C-; d d") 'org-deadsync--hydra/body)
 	    org-deadsync-mode-keymap)
   (if org-deadsync-mode
-      (org-deadsync-refresh-all)
-    (org-deadsync--lock-all nil)
-    (org-deadsync-clear-overlays)))
-  
+      (progn 
+	(org-deadsync-refresh-all)
+	(add-hook before-save-hook 'org-deadsync--clear-all t t)
+	(add-hook after-save-hook 'org-deadsync-refresh-all t t))
+    (org-deadsync--clear-all)
+    (remove-hook before-save-hook 'org-deadsync--clear-all t)
+    (remove-hook before-save-hook 'org-deadsync-refresh-all t)))
+
+    
 (provide 'org-deadsync)
 
 ;;; org-deadsync.el ends here
