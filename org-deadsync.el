@@ -105,6 +105,7 @@
 
 ;;;; Functions
 
+;; old code
 ;; (defun org-deadsync--ts-adjust (&rest adjustments)
 ;;   "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
 ;;   (let ((ts (-last-item adjustments))
@@ -118,6 +119,7 @@
 ;; 	  (split-string (car adjustments) " "))
 ;;    ts))
 
+;; Alphapapa's suggestion
 (defun org-deadsync--ts-adjust (&rest adjustments)
   "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
   (let* ((ts (-last-item adjustments))
@@ -129,7 +131,6 @@
                                             ("y" 'year))
                                append (list slot num))))
     (apply #'ts-adjust (append adjustments (list ts)))))
-
 
 (defun org-deadsync-lock-deadline (t-or-nil)
   "Make deadline in current heading read-only if argument is non-nil"
@@ -172,14 +173,34 @@
       (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
 	      'after-string org-deadsync-master-icon))))
 
+;; Alphapapa's suggestion
 (defun org-deadsync--dependentsp ()
-  "Does the current heading have dependents?"
-  (when-let ((master-id (org-entry-get (point) "ID")))
-    (if (org-ql-select org-deadsync-files
-	  `(and (property "ORG-DEADSYNC-LINK" ,master-id)
-		(property "ORG-DEADSYNC-ACTIVE" "t")))
-	t nil)))
+  "Return non-nil if current entry has `org-deadsync' dependents."
+  (when-let* ((master-id (org-entry-get (point) "ID")))
+    (org-ql-select org-deadsync-files
+      `(and (property "ORG-DEADSYNC-LINK" ,master-id)
+	    (property "ORG-DEADSYNC-ACTIVE" "t")))))
 
+;; old code 
+;; (defun org-deadsync--dependentsp ()
+;;   "Does the current heading have dependents?"
+;;   (when-let ((master-id (org-entry-get (point) "ID")))
+;;     (if (org-ql-select org-deadsync-files
+;; 	  `(and (property "ORG-DEADSYNC-LINK" ,master-id)
+;; 		(property "ORG-DEADSYNC-ACTIVE" "t")))
+;; 	t nil)))
+
+
+;; Alphapapa's suggestion
+;; (defun org-deadsync--deadline-locked-p ()
+;;   "Return non-nil if current entry has locked deadline."
+;;   (save-excursion
+;;     (when (org-entry-get (point) "DEADLINE")
+;;       (forward-line 1)
+;;       (when (re-search-forward org-deadline-line-regexp (line-end-position) t)
+;;         (text-property-any (match-beginning 0) (match-end 0) 'read-only t)))))
+
+;; old code
 (defun org-deadsync--deadline-locked-p ()
   "For the current heading, returns t if deadline is locked; otherwise nil"
   (save-excursion
@@ -189,6 +210,8 @@
       (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
       (if (text-property-any (match-beginning 0) (match-end 0) 'read-only t)
 	  't nil))))
+
+
 
 (defun org-deadsync--toggle-lock ()
   "Toggle whether the deadline text is locked."
@@ -251,7 +274,7 @@
   (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
   (org-deadsync-lock-deadline nil)
   (org-deadline nil "2000-01-01") ; dummy deadline in case one is there already
-;  (org-deadsync-place-overlays-this-heading) unnecessary)
+;  (org-deadsync-place-overlays-this-heading) unnecessary
   (org-deadsync-refresh-this-heading)))
 
 (defun org-deadsync-refresh-all ()
@@ -294,15 +317,25 @@
 	  (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
 	    (org-deadsync-lock-deadline t))))))
 
+
 (defun org-deadsync--weekend-adjust (timestamp)
   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
   (if org-deadsync-weekend-adjustment
-      (cond ((string= (ts-day-abbr timestamp) "Sun")
-	     (ts-adjust 'day 1 timestamp))
-	    ((string= (ts-day-abbr timestamp) "Sat")
-	     (ts-adjust 'day 2 timestamp))
-	    (t timestamp))
+      (pcase (ts-dow timestamp)
+        (0 (ts-adjust 'day 1 timestamp))
+        (6 (ts-adjust 'day 2 timestamp))
+        (_ timestamp))
     timestamp))
+
+;; (defun org-deadsync--weekend-adjust (timestamp)
+;;   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
+;;   (if org-deadsync-weekend-adjustment
+;;       (cond ((string= (ts-day-abbr timestamp) "Sun")
+;; 	     (ts-adjust 'day 1 timestamp))
+;; 	    ((string= (ts-day-abbr timestamp) "Sat")
+;; 	     (ts-adjust 'day 2 timestamp))
+;; 	    (t timestamp))
+;;     timestamp))
   
 (defun org-deadsync--lock-all (t-or-nil)
   (interactive)
@@ -320,6 +353,7 @@
 (defun org-deadsync-toggle-active ()
   "Toggle whether a dependent deadline is active or not"
   (interactive)
+  (save-excursion 
   (when-let ((activep (cdar (org-entry-properties (point) "ORG-DEADSYNC-ACTIVE"))))
     (if (string= activep "t")
 	(progn 
@@ -327,7 +361,8 @@
 	  (org-deadsync-lock-deadline nil))
       (org-set-property "ORG-DEADSYNC-ACTIVE" "t"))
       (org-deadsync-refresh-this-heading)
-      (org-deadsync-refresh-dependents)))
+      (org-deadsync-refresh-dependents))))
+
 
 (defun org-deadsync-clear-overlays ()
   (interactive)
