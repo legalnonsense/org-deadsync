@@ -211,8 +211,6 @@
       (if (text-property-any (match-beginning 0) (match-end 0) 'read-only t)
 	  't nil))))
 
-
-
 (defun org-deadsync--toggle-lock ()
   "Toggle whether the deadline text is locked."
   (org-deadsync-lock-deadline (not (org-deadsync-deadline-locked-p))))
@@ -317,7 +315,7 @@
 	  (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
 	    (org-deadsync-lock-deadline t))))))
 
-
+;; Alphapapa's suggestion
 (defun org-deadsync--weekend-adjust (timestamp)
   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
   (if org-deadsync-weekend-adjustment
@@ -327,6 +325,7 @@
         (_ timestamp))
     timestamp))
 
+;; old code
 ;; (defun org-deadsync--weekend-adjust (timestamp)
 ;;   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
 ;;   (if org-deadsync-weekend-adjustment
@@ -362,7 +361,6 @@
       (org-set-property "ORG-DEADSYNC-ACTIVE" "t"))
       (org-deadsync-refresh-this-heading)
       (org-deadsync-refresh-dependents))))
-
 
 (defun org-deadsync-clear-overlays ()
   (interactive)
@@ -446,11 +444,11 @@ _q_ Quit
   (if org-deadsync-mode
       (progn 
 	(org-deadsync-refresh-all)
-	(add-hook before-save-hook 'org-deadsync--clear-all t t)
-	(add-hook after-save-hook 'org-deadsync-refresh-all t t))
+	(add-hook 'before-save-hook 'org-deadsync--clear-all t t)
+	(add-hook 'after-save-hook 'org-deadsync-refresh-all t t))
     (org-deadsync--clear-all)
-    (remove-hook before-save-hook 'org-deadsync--clear-all t)
-    (remove-hook before-save-hook 'org-deadsync-refresh-all t)))
+    (remove-hook 'before-save-hook 'org-deadsync--clear-all t)
+    (remove-hook 'before-save-hook 'org-deadsync-refresh-all t)))
 
     
 (provide 'org-deadsync)
