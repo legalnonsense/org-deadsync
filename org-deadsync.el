@@ -297,23 +297,24 @@
 (defun org-deadsync-refresh-this-heading ()
   (interactive)
   (org-deadsync-place-overlays-this-heading)
-  (when (org-entry-get (point) "ORG-DEADSYNC-LINK")
-      (progn 
-	(org-deadsync-clear-overlays-this-heading) ;; Important to clear overlays before changing deadline
-	(let* ((master-deadline (save-excursion    ;; otherwise, the overlays will appear in strange places
-				  (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
-				  (ts-parse-org (org-entry-get (point) "DEADLINE"))))
-	       (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
-	       (new-deadline (->> master-deadline
-				  (org-deadsync--ts-adjust offset)
-				  (org-deadsync--skip-date-adjust)
-				  (org-deadsync--weekend-adjust)
-				  (ts-format "<%Y-%m-%d %a>"))))
-	  (org-deadsync-lock-deadline nil)
-	  (org-deadline nil new-deadline)
-	  (org-deadsync-place-overlays-this-heading)
-	  (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
-	    (org-deadsync-lock-deadline t))))))
+  (when (and (org-entry-get (point) "ORG-DEADSYNC-LINK")
+	     (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t"))
+    (progn 
+      (org-deadsync-clear-overlays-this-heading) ;; Important to clear overlays before changing deadline
+      (let* ((master-deadline (save-excursion    ;; otherwise, the overlays will appear in strange places
+				(org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
+				(ts-parse-org (org-entry-get (point) "DEADLINE"))))
+	     (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
+	     (new-deadline (->> master-deadline
+				(org-deadsync--ts-adjust offset)
+				(org-deadsync--skip-date-adjust)
+				(org-deadsync--weekend-adjust)
+				(ts-format "<%Y-%m-%d %a>"))))
+	(org-deadsync-lock-deadline nil)
+	(org-deadline nil new-deadline)
+	(org-deadsync-place-overlays-this-heading)
+	(when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
+	  (org-deadsync-lock-deadline t))))))
 
 ;; Alphapapa's suggestion
 (defun org-deadsync--weekend-adjust (timestamp)
@@ -435,12 +436,12 @@ _q_ Quit
   nil
   " DEADSYNC"
   (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
-	    (define-key org-deadsync-mode-keymap (kbd "<S-right>") 'org-deadsync-org-shiftright)
-	    (define-key org-deadsync-mode-keymap (kbd "<S-up>") 'org-deadsync-org-shiftup)
-	    (define-key org-deadsync-mode-keymap (kbd "<S-down>") 'org-deadsync-org-shiftdown)
-	    (define-key org-deadsync-mode-keymap (kbd "<S-left>") 'org-deadsync-org-shiftleft)
-	    (define-key org-deadsync-mode-keymap (kbd "C-; d d") 'org-deadsync--hydra/body)
-	    org-deadsync-mode-keymap)
+    (define-key org-deadsync-mode-keymap (kbd "<S-right>") 'org-deadsync-org-shiftright)
+    (define-key org-deadsync-mode-keymap (kbd "<S-up>") 'org-deadsync-org-shiftup)
+    (define-key org-deadsync-mode-keymap (kbd "<S-down>") 'org-deadsync-org-shiftdown)
+    (define-key org-deadsync-mode-keymap (kbd "<S-left>") 'org-deadsync-org-shiftleft)
+    (define-key org-deadsync-mode-keymap (kbd "C-; d d") 'org-deadsync--hydra/body)
+    org-deadsync-mode-keymap)
   (if org-deadsync-mode
       (progn 
 	(org-deadsync-refresh-all)
@@ -450,7 +451,7 @@ _q_ Quit
     (remove-hook 'before-save-hook 'org-deadsync--clear-all t)
     (remove-hook 'before-save-hook 'org-deadsync-refresh-all t)))
 
-    
+
 (provide 'org-deadsync)
 
 ;;; org-deadsync.el ends here
