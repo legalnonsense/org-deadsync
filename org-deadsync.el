@@ -277,11 +277,12 @@
 
 (defun org-deadsync-refresh-all ()
   (interactive)
-  (org-ql-select org-deadsync-files
-    '(property "ORG-DEADSYNC-MASTER" "t")
-    :action (lambda ()
-	      (org-deadsync-refresh-this-heading)
-	      (org-deadsync-refresh-dependents))))
+  (org-with-wide-buffer
+   (org-ql-select org-deadsync-files
+     '(property "ORG-DEADSYNC-MASTER" "t")
+     :action (lambda ()
+	       (org-deadsync-refresh-this-heading)
+	       (org-deadsync-refresh-dependents)))))
 
 (defun org-deadsync-refresh-dependents ()
   (interactive)
@@ -444,12 +445,12 @@ _q_ Quit
     org-deadsync-mode-keymap)
   (if org-deadsync-mode
       (progn 
-	(org-deadsync-refresh-all)
-	(add-hook 'before-save-hook 'org-deadsync--clear-all t t)
-	(add-hook 'after-save-hook 'org-deadsync-refresh-all t t))
-    (org-deadsync--clear-all)
-    (remove-hook 'before-save-hook 'org-deadsync--clear-all t)
-    (remove-hook 'before-save-hook 'org-deadsync-refresh-all t)))
+	(org-deadsync-refresh-all))
+					;	(add-hook 'before-save-hook 'org-deadsync--clear-all t t)
+					;	(add-hook 'after-save-hook 'org-deadsync-refresh-all t t))
+    (org-deadsync--clear-all)))
+;    (remove-hook 'before-save-hook 'org-deadsync--clear-all t)
+;    (remove-hook 'before-save-hook 'org-deadsync-refresh-all t)))
 
 
 (provide 'org-deadsync)
