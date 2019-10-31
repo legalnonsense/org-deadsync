@@ -88,11 +88,14 @@
 (defcustom org-deadsync-files (org-agenda-files)
   "Files with linked deadlines. Defaults to all agenda files.")
 
- (defcustom org-deadsync-lock-icon ""
-   "Icon displayed after locked deadlines")
+(setq org-deadsync-files (org-agenda-files))
 
- (defcustom org-deadsync-master-icon "⚷"
-   "Icon displayed after master deadlines.")
+
+(defcustom org-deadsync-lock-icon ""
+  "Icon displayed after locked deadlines")
+
+(defcustom org-deadsync-master-icon "⚷"
+  "Icon displayed after master deadlines.")
 
 (defcustom org-deadsync-skip-dates '()
   "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays.")
@@ -168,10 +171,12 @@
 	(end (match-end 0)))
     (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
       (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
-	      'after-string org-deadsync-lock-icon))
+	      'after-string org-deadsync-lock-icon
+	      'evaporate t))
     (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
       (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
-	      'after-string org-deadsync-master-icon))))
+	      'after-string org-deadsync-master-icon
+	      'evaporate t))))
 
 ;; Alphapapa's suggestion
 (defun org-deadsync--dependentsp ()
@@ -277,12 +282,18 @@
 
 (defun org-deadsync-refresh-all ()
   (interactive)
-  (org-with-wide-buffer
-   (org-ql-select org-deadsync-files
-     '(property "ORG-DEADSYNC-MASTER" "t")
-     :action (lambda ()
-	       (org-deadsync-refresh-this-heading)
-	       (org-deadsync-refresh-dependents)))))
+  (save-excursion 
+    (org-with-wide-buffer
+     (outline-show-all)
+     (org-ql-select org-deadsync-files
+       '(property "ORG-DEADSYNC-MASTER" "t")
+       :action (lambda ()
+		 (org-deadsync-refresh-this-heading)
+		 (org-deadsync-refresh-dependents)))))
+  (unless (org-before-first-heading-p)
+    (outline-hide-other)))
+
+
 
 (defun org-deadsync-refresh-dependents ()
   (interactive)
@@ -448,6 +459,7 @@ _q_ Quit
 	(org-deadsync-refresh-all))
 					;	(add-hook 'before-save-hook 'org-deadsync--clear-all t t)
 					;	(add-hook 'after-save-hook 'org-deadsync-refresh-all t t))
+
     (org-deadsync--clear-all)))
 ;    (remove-hook 'before-save-hook 'org-deadsync--clear-all t)
 ;    (remove-hook 'before-save-hook 'org-deadsync-refresh-all t)))
