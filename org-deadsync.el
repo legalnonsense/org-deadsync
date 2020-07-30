@@ -108,23 +108,9 @@
 
 ;;;; Functions
 
-;; old code
-;; (defun org-deadsync--ts-adjust (&rest adjustments)
-;;   "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
-;;   (let ((ts (-last-item adjustments))
-;; 	(adjustments (nbutlast adjustments)))
-;;     (-map (lambda (adjustment)
-;; 	    (let ((slot (substring adjustment -1)))
-;; 	      (cond ((string= slot "d") (setq slot 'day))
-;; 		    ((string= slot "m") (setq slot 'month))
-;; 		    ((string= slot "y") (setq slot 'year)))
-;; 	      (setq ts (ts-adjust slot (string-to-number (substring adjustment 0 -1)) ts))))
-;; 	  (split-string (car adjustments) " "))
-;;    ts))
-
-;; Alphapapa's suggestion
 (defun org-deadsync--ts-adjust (&rest adjustments)
-  "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
+  "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; 
+accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
   (let* ((ts (-last-item adjustments))
 	 (adjustments (cl-loop for adj in (split-string (car (nbutlast adjustments)) " ")
                                for num = (string-to-number (substring adj 0 -1))
@@ -142,7 +128,7 @@
     (when (org-get-deadline-time (point))
       (end-of-visual-line)
       (re-search-backward "^\\*+[[:space:]]")
-      (when (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+      (when (re-search-forward (org-re-timestamp 'deadline) nil t)
 	(let ((inhibit-read-only t)
 	      (start (match-beginning 0))
 	      (end (match-end 0)))
@@ -155,7 +141,7 @@
 		      (forward-line)
 		      (point)))
 	(end (progn
-	       (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+	       (re-search-forward (org-re-timestamp 'deadline) nil t)
 	       (end-of-line)
 	       (point))))
     (ov-clear 'after-string org-deadsync-lock-icon start end)
@@ -166,19 +152,18 @@
   (org-deadsync-clear-overlays-this-heading)
   (let ((start (progn (end-of-visual-line)
 		      (re-search-backward "^\\*+ ")
-		      (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>")
+		      (re-search-forward (org-re-timestamp 'deadline))
 		      (match-beginning 0)))
 	(end (match-end 0)))
     (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
-      (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
+      (ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
 	      'after-string org-deadsync-lock-icon
 	      'evaporate t))
     (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
-      (ov-set (ov-regexp "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" start end)
+      (ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
 	      'after-string org-deadsync-master-icon
 	      'evaporate t))))
 
-;; Alphapapa's suggestion
 (defun org-deadsync--dependentsp ()
   "Return non-nil if current entry has `org-deadsync' dependents."
   (when-let* ((master-id (org-entry-get (point) "ID")))
@@ -186,33 +171,13 @@
       `(and (property "ORG-DEADSYNC-LINK" ,master-id)
 	    (property "ORG-DEADSYNC-ACTIVE" "t")))))
 
-;; old code 
-;; (defun org-deadsync--dependentsp ()
-;;   "Does the current heading have dependents?"
-;;   (when-let ((master-id (org-entry-get (point) "ID")))
-;;     (if (org-ql-select org-deadsync-files
-;; 	  `(and (property "ORG-DEADSYNC-LINK" ,master-id)
-;; 		(property "ORG-DEADSYNC-ACTIVE" "t")))
-;; 	t nil)))
-
-
-;; Alphapapa's suggestion
-;; (defun org-deadsync--deadline-locked-p ()
-;;   "Return non-nil if current entry has locked deadline."
-;;   (save-excursion
-;;     (when (org-entry-get (point) "DEADLINE")
-;;       (forward-line 1)
-;;       (when (re-search-forward org-deadline-line-regexp (line-end-position) t)
-;;         (text-property-any (match-beginning 0) (match-end 0) 'read-only t)))))
-
-;; old code
 (defun org-deadsync--deadline-locked-p ()
   "For the current heading, returns t if deadline is locked; otherwise nil"
   (save-excursion
     (when (org-get-deadline-time (point))
       (end-of-visual-line)
       (re-search-backward "^\\*+[[:space:]]")
-      (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)
+      (re-search-forward (org-re-timestamp 'deadline) nil t)
       (if (text-property-any (match-beginning 0) (match-end 0) 'read-only t)
 	  't nil))))
 
@@ -260,7 +225,7 @@
 	(master-id nil)
 	(offset (read-string "Enter offset: ")))
     (when (not (or (string= (substring offset 0 1) "+")
- 		    (string= (substring offset 0 1) "-")))
+		   (string= (substring offset 0 1) "-")))
       (setq offset (concat "+" offset)))
     (save-excursion 
       (org-goto)
@@ -272,13 +237,12 @@
 	(setq master-id (org-id-get-create)))
       (org-set-property "ORG-DEADSYNC-MASTER" "t")
       (org-deadsync-place-overlays-this-heading))
-  (org-set-property "ORG-DEADSYNC-LINK" master-id)
-  (org-set-property "ORG-DEADSYNC-OFFSET" offset)
-  (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
-  (org-deadsync-lock-deadline nil)
-  (org-deadline nil "2000-01-01") ; dummy deadline in case one is there already
-;  (org-deadsync-place-overlays-this-heading) unnecessary
-  (org-deadsync-refresh-this-heading)))
+    (org-set-property "ORG-DEADSYNC-LINK" master-id)
+    (org-set-property "ORG-DEADSYNC-OFFSET" offset)
+    (org-set-property "ORG-DEADSYNC-ACTIVE" "t")
+    (org-deadsync-lock-deadline nil)
+    (org-deadline nil "2000-01-01") ; dummy deadline in case one is there already
+    (org-deadsync-refresh-this-heading)))
 
 (defun org-deadsync-refresh-all ()
   (interactive)
@@ -286,22 +250,20 @@
     (org-with-wide-buffer
      (outline-show-all)
      (org-ql-select org-deadsync-files
-       '(property "ORG-DEADSYNC-MASTER" "t")
+	 '(property "ORG-DEADSYNC-MASTER" "t")
        :action (lambda ()
 		 (org-deadsync-refresh-this-heading)
 		 (org-deadsync-refresh-dependents)))))
   (unless (org-before-first-heading-p)
     (outline-hide-other)))
 
-
-
 (defun org-deadsync-refresh-dependents ()
   (interactive)
   (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
     (when-let ((master-id (org-entry-get (point) "ID")))
       (org-ql-select org-deadsync-files
-	`(and (property "ORG-DEADSYNC-LINK" ,master-id)
-	      (property "ORG-DEADSYNC-ACTIVE" "t"))
+	  `(and (property "ORG-DEADSYNC-LINK" ,master-id)
+	    (property "ORG-DEADSYNC-ACTIVE" "t"))
 	:action (lambda ()
 		  (org-deadsync-refresh-this-heading)
 		  (org-deadsync-refresh-dependents)))))) 
@@ -328,9 +290,9 @@
 	(when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
 	  (org-deadsync-lock-deadline t))))))
 
-;; Alphapapa's suggestion
 (defun org-deadsync--weekend-adjust (timestamp)
-  "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
+  "Adjust deadline to next Monday if the deadline falls on a
+ weekend, assuming org-deadsync-weekend-adjustment is t"
   (if org-deadsync-weekend-adjustment
       (pcase (ts-dow timestamp)
         (0 (ts-adjust 'day 1 timestamp))
@@ -338,17 +300,6 @@
         (_ timestamp))
     timestamp))
 
-;; old code
-;; (defun org-deadsync--weekend-adjust (timestamp)
-;;   "Adjust deadline to next Monday if the deadline falls on a weekend, assuming org-deadsync-weekend-adjustment is t"
-;;   (if org-deadsync-weekend-adjustment
-;;       (cond ((string= (ts-day-abbr timestamp) "Sun")
-;; 	     (ts-adjust 'day 1 timestamp))
-;; 	    ((string= (ts-day-abbr timestamp) "Sat")
-;; 	     (ts-adjust 'day 2 timestamp))
-;; 	    (t timestamp))
-;;     timestamp))
-  
 (defun org-deadsync--lock-all (t-or-nil)
   (interactive)
   (org-ql-select org-deadsync-files
@@ -380,10 +331,6 @@
   (ov-clear 'after-string org-deadsync-lock-icon (point-min) (point-max))
   (ov-clear 'after-string org-deadsync-master-icon (point-min) (point-max)))
 
-;; (defun org-deadsync-clear-all-overlays-in-file ()
-;;   (ov-clear 'after-string org-deadsync-lock-icon)
-;;   (ov-clear 'after-string org-deadsync-master-icon))
-
 (defun org-deadsync--clear-all ()
   "Remove all locks and overlays."
   (org-deadsync--lock-all nil)
@@ -393,7 +340,7 @@
   "Substitutes for org-shift<direction> when DEADSYNC mode activated."
   (if (and (org-at-timestamp-p 'agenda)
 	   (save-excursion (beginning-of-line)
-			   (re-search-forward "DEADLINE:[[:space:]]<[[:digit:]]\\{4\\}-[[:digit:]]\\{2\\}-[[:digit:]]\\{2\\}.*?>" nil t)))
+			   (re-search-forward (org-re-timestamp 'deadline) nil t)))
       (progn 
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
 		 (get-text-property (point) 'read-only)
@@ -457,13 +404,7 @@ _q_ Quit
   (if org-deadsync-mode
       (progn 
 	(org-deadsync-refresh-all))
-					;	(add-hook 'before-save-hook 'org-deadsync--clear-all t t)
-					;	(add-hook 'after-save-hook 'org-deadsync-refresh-all t t))
-
     (org-deadsync--clear-all)))
-;    (remove-hook 'before-save-hook 'org-deadsync--clear-all t)
-;    (remove-hook 'before-save-hook 'org-deadsync-refresh-all t)))
-
 
 (provide 'org-deadsync)
 
