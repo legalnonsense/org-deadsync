@@ -7,3 +7,7 @@ test.org
 #Q-testing.el#
 #README.org#
 #Q-testing.el#
+/#Q-testing.el#
+/#README.org#
+*.el#
+/Q-testing.el

@@ -1,4 +1,4 @@
-;;; org-deadsync.el --- Sync deadlines in emacs orgmode documents -*- lexical-binding: t; -*-
+;;; org-deadsync.el --- Sync deadlines in Orgmode documents -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019 Jeff Filipovits
 
@@ -32,13 +32,13 @@
 
 ;;;; Usage
 
-;; Run one of these commands:
+;; Run this command
 
 ;; `org-deadsync-mode': Turn on deadsync mode
 
 ;;;; Tips
 
-;; + You can customize settings in the `deadsync' group.
+;; + You can customize settings in the `org-deadsync' group.
 
 ;;;; Credits
 
@@ -83,22 +83,24 @@
   :group 'org-deadsync)
 
 (defcustom org-deadsync-weekend-adjustment t
-  "If t, moves any deadline that falls on the weekend to the next weekday.")
+  "If t, moves any deadline that falls on the weekend to the next weekday."
+  :type 'boolean)
 
 (defcustom org-deadsync-files (org-agenda-files)
-  "Files with linked deadlines. Defaults to all agenda files.")
-
-(setq org-deadsync-files (org-agenda-files))
-
+  "Files with linked deadlines. Defaults to all agenda files."
+  :type 'list)
 
 (defcustom org-deadsync-lock-icon ""
-  "Icon displayed after locked deadlines")
+  "Icon displayed after locked deadlines"
+  :type 'string)
 
 (defcustom org-deadsync-master-icon "⚷"
-  "Icon displayed after master deadlines.")
+  "Icon displayed after master deadlines."
+  :type 'string)
 
 (defcustom org-deadsync-skip-dates '()
-  "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays.")
+  "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays."
+  :type 'list)
 
 ;;;; Variables
 
@@ -126,9 +128,9 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
   (interactive)
   (save-excursion
     (when (org-get-deadline-time (point))
-      (end-of-visual-line)
-      (re-search-backward "^\\*+[[:space:]]")
-      (when (re-search-forward (org-re-timestamp 'deadline) nil t)
+      (outline-back-to-heading)
+      (when (re-search-forward (org-re-timestamp 'deadline)
+			       (line-end-position 2) t)
 	(let ((inhibit-read-only t)
 	      (start (match-beginning 0))
 	      (end (match-end 0)))
@@ -136,12 +138,13 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 
 (defun org-deadsync-clear-overlays-this-heading ()
   (interactive)
-  (let ((start (progn (end-of-visual-line)
-		      (re-search-backward "^\\*+ ")
+  (let ((start (progn (outline-back-to-heading)
 		      (forward-line)
 		      (point)))
 	(end (progn
-	       (re-search-forward (org-re-timestamp 'deadline) nil t)
+	       (outline-back-to-heading)
+	       (re-search-forward (org-re-timestamp 'deadline)
+				  (line-end-position 2) t)
 	       (end-of-line)
 	       (point))))
     (ov-clear 'after-string org-deadsync-lock-icon start end)
@@ -150,10 +153,11 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 (defun org-deadsync-place-overlays-this-heading ()
   (interactive)
   (org-deadsync-clear-overlays-this-heading)
-  (let ((start (progn (end-of-visual-line)
-		      (re-search-backward "^\\*+ ")
-		      (re-search-forward (org-re-timestamp 'deadline))
-		      (match-beginning 0)))
+  (let ((start (progn
+		 (outline-back-to-heading)
+		 (re-search-forward (org-re-timestamp 'deadline)
+				    (line-end-position 2))
+		 (match-beginning 0)))
 	(end (match-end 0)))
     (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
       (ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
@@ -175,11 +179,10 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
   "For the current heading, returns t if deadline is locked; otherwise nil"
   (save-excursion
     (when (org-get-deadline-time (point))
-      (end-of-visual-line)
-      (re-search-backward "^\\*+[[:space:]]")
-      (re-search-forward (org-re-timestamp 'deadline) nil t)
-      (if (text-property-any (match-beginning 0) (match-end 0) 'read-only t)
-	  't nil))))
+      (org-back-to-heading)
+      (re-search-forward (org-re-timestamp 'deadline)
+			 (line-end-position 2) t)
+      (text-property-any (match-beginning 0) (match-end 0) 'read-only t))))
 
 (defun org-deadsync--toggle-lock ()
   "Toggle whether the deadline text is locked."
@@ -279,24 +282,28 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 				(org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
 				(ts-parse-org (org-entry-get (point) "DEADLINE"))))
 	     (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
-	     (new-deadline (->> master-deadline
-				(org-deadsync--ts-adjust offset)
-				(org-deadsync--skip-date-adjust)
-				(org-deadsync--weekend-adjust)
-				(ts-format "<%Y-%m-%d %a>"))))
+	     (offset-negative-p (< (string-to-number offset) 0))
+	     (new-deadline (--> master-deadline
+				(org-deadsync--ts-adjust offset it)
+				(org-deadsync--skip-date-adjust it offset-negative-p)
+				(org-deadsync--weekend-adjust it offset-negative-p)
+				(org-deadsync--skip-date-adjust it offset-negative-p)
+				(org-deadsync--weekend-adjust it offset-negative-p)
+				(ts-format "<%Y-%m-%d %a>" it))))
 	(org-deadsync-lock-deadline nil)
 	(org-deadline nil new-deadline)
 	(org-deadsync-place-overlays-this-heading)
 	(when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
 	  (org-deadsync-lock-deadline t))))))
 
-(defun org-deadsync--weekend-adjust (timestamp)
+(defun org-deadsync--weekend-adjust (timestamp &optional negative)
   "Adjust deadline to next Monday if the deadline falls on a
- weekend, assuming org-deadsync-weekend-adjustment is t"
+ weekend, assuming org-deadsync-weekend-adjustment is t. If NEGATIVE,
+then adjust backward to the previous Friday."
   (if org-deadsync-weekend-adjustment
       (pcase (ts-dow timestamp)
-        (0 (ts-adjust 'day 1 timestamp))
-        (6 (ts-adjust 'day 2 timestamp))
+        (0 (ts-adjust 'day (if negative -2 1) timestamp))
+        (6 (ts-adjust 'day (if negative -1 2) timestamp))
         (_ timestamp))
     timestamp))
 
@@ -307,10 +314,10 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
     :action (lambda ()
 	      (org-deadsync-lock-deadline t-or-nil))))
 
-(defun org-deadsync--skip-date-adjust (timestamp)
+(defun org-deadsync--skip-date-adjust (timestamp &optional negative)
   "Adjust deadline to next day if deadline falls on a holiday"
   (if (member (ts-format "%Y-%m-%d" timestamp) org-deadsync-skip-dates)
-      (ts-adjust 'day 1 timestamp)
+      (ts-adjust 'day (if negative -1 1) timestamp)
     timestamp))
 
 (defun org-deadsync-toggle-active ()
@@ -344,7 +351,7 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
       (progn 
 	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
 		 (get-text-property (point) 'read-only)
-		 (yes-or-no-p "Do you wish to deactivate this dependency?"))
+		 (yes-or-no-p "Do you want to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
   (cond ((eq direction 'down) (org-shiftdown))
 	((eq direction 'up) (org-shiftup))
