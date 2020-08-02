@@ -285,6 +285,7 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 	     (offset-negative-p (< (string-to-number offset) 0))
 	     (new-deadline (--> master-deadline
 				(org-deadsync--ts-adjust offset it)
+				;; This needs to be fixed...
 				(org-deadsync--skip-date-adjust it offset-negative-p)
 				(org-deadsync--weekend-adjust it offset-negative-p)
 				(org-deadsync--skip-date-adjust it offset-negative-p)
