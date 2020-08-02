@@ -316,7 +316,8 @@ then adjust backward to the previous Friday."
 	      (org-deadsync-lock-deadline t-or-nil))))
 
 (defun org-deadsync--skip-date-adjust (timestamp &optional negative)
-  "Adjust deadline to next day if deadline falls on a holiday"
+  "Adjust deadline to next day if deadline falls on a date in 
+`org-deadsync-skip-dates'"
   (if (member (ts-format "%Y-%m-%d" timestamp) org-deadsync-skip-dates)
       (ts-adjust 'day (if negative -1 1) timestamp)
     timestamp))
