@@ -138,23 +138,25 @@ E.g.:
   (save-excursion
     (when (org-get-deadline-time (point))
       (outline-back-to-heading)
-      (when (re-search-forward (org-re-timestamp 'deadline)
-			       (line-end-position 2) t)
-	(let ((inhibit-read-only t)
-	      (start (match-beginning 0))
-	      (end (match-end 0)))
-	  (put-text-property start end 'read-only t-or-nil))))))
+      ;; This should be found, so we want an error if it's not found
+      (re-search-forward (org-re-timestamp 'deadline)
+			 (line-end-position 2))
+      (let ((inhibit-read-only t)
+	    (start (match-beginning 0))
+	    (end (match-end 0)))
+	(put-text-property start end 'read-only t-or-nil)))))
 
 (defun org-deadsync-clear-overlays-this-heading ()
   "Clear the lock and key icons from this heading."
   (interactive)
-  (outline-back-to-heading)
-  (re-search-forward (org-re-timestamp 'deadline)
-		     (line-end-position 2) t)
-  (ov-clear 'after-string org-deadsync-lock-icon (match-beginning 0)
-	    (match-end 0))
-  (ov-clear 'after-string org-deadsync-master-icon (match-beginning 0)
-	    (match-end 0)))
+  (save-excursion 
+    (outline-back-to-heading)
+    (re-search-forward (org-re-timestamp 'deadline)
+		       (line-end-position 2) t)
+    (ov-clear 'after-string org-deadsync-lock-icon (match-beginning 0)
+	      (match-end 0))
+    (ov-clear 'after-string org-deadsync-master-icon (match-beginning 0)
+	      (match-end 0))))
 
 (defun org-deadsync-place-overlays-this-heading ()
   "Put the appropriate overlay (i.e., lock or key, or both) at
