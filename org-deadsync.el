@@ -192,7 +192,7 @@ ORG-DEADSYNC-MASTER."
 			 (line-end-position 2) t)
       (text-property-any (match-beginning 0) (match-end 0) 'read-only t))))
 
-(defun org-deadsync--toggle-lock ()
+(defun org-deadsync-toggle-lock ()
   "Toggle whether the deadline text is locked."
   (org-deadsync-lock-deadline (not (org-deadsync--deadline-locked-p))))
 
