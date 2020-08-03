@@ -283,19 +283,25 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 				(ts-parse-org (org-entry-get (point) "DEADLINE"))))
 	     (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
 	     (offset-negative-p (< (string-to-number offset) 0))
-	     (new-deadline (--> master-deadline
-				(org-deadsync--ts-adjust offset it)
-				;; This needs to be fixed...
-				(org-deadsync--skip-date-adjust it offset-negative-p)
-				(org-deadsync--weekend-adjust it offset-negative-p)
-				(org-deadsync--skip-date-adjust it offset-negative-p)
-				(org-deadsync--weekend-adjust it offset-negative-p)
-				(ts-format "<%Y-%m-%d %a>" it))))
+	     (new-deadline (org-deadsync--ts-adjust offset master-deadline)))
+	(while (org-deadsync--skip-day-p new-deadline)
+	  (setq new-deadline (org-deadsync--skip-date-adjust new-deadline offset-negative-p))
+	  (setq new-deadline (org-deadsync--weekend-adjust new-deadline offset-negative-p)))
+	(setq new-deadline (ts-format "<%Y-%m-%d %a>" new-deadline))
 	(org-deadsync-lock-deadline nil)
 	(org-deadline nil new-deadline)
 	(org-deadsync-place-overlays-this-heading)
 	(when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
 	  (org-deadsync-lock-deadline t))))))
+
+(defun org-deadsync--skip-day-p (timestamp)
+  "Should this date be skipped because it is a weekend or
+because it is in `org-deadsync-skip-dates'?"
+  (or (and org-deadsync-weekend-adjustment
+	   (pcase (ts-dow timestamp)
+             (0 t)
+             (6 t)))
+      (member (ts-format "%Y-%m-%d" timestamp) org-deadsync-skip-dates)))
 
 (defun org-deadsync--weekend-adjust (timestamp &optional negative)
   "Adjust deadline to next Monday if the deadline falls on a
