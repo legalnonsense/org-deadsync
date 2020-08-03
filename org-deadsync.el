@@ -380,10 +380,11 @@ then adjust backward to the previous Friday."
 		 (get-text-property (point) 'read-only)
 		 (yes-or-no-p "Do you want to deactivate this dependency?"))
 	    (org-deadsync-toggle-active))))
-  (cond ((eq direction 'down) (org-shiftdown))
-	((eq direction 'up) (org-shiftup))
-	((eq direction 'left) (org-shiftleft))
-	((eq direction 'right) (org-shiftright)))
+  (pcase direction
+    (`down (org-shiftdown))
+    (`up (org-shiftup))
+    (`left (org-shiftleft))
+    (`right (org-shiftright)))
   (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
     (org-deadsync-refresh-dependents)))
 
@@ -405,7 +406,7 @@ then adjust backward to the previous Friday."
 
 ;;;###autoload
 (define-minor-mode org-deadsync-mode
-  "Create deadline dependencies for org headings"
+  "Automatically update dependent deadlines"
   nil
   " DEADSYNC"
   (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
