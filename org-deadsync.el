@@ -400,26 +400,6 @@ then adjust backward to the previous Friday."
   (interactive)
   (org-deadsync-org-shiftdirection 'down))
 
-(defhydra org-deadsync--hydra (:color blue :hint nil)
-  "
-Org Deadline Dependencies:
-
-_s_ Set synced deadline      _j_ Jump to master deadline  _c_ Clear all overlays
-_k_ Remove sync              _e_ Echo master information  _r_ Refresh all deadlines
-_t_ Toggle active sync
-    for this heading
-
-_q_ Quit
-"
-  ("s" org-deadsync-set-dependency)
-  ("j" org-deadsync-jump-to-master)
-  ("e" org-deadsync-show-master)
-  ("t" org-deadsync-toggle-active)
-  ("k" org-deadsync-remove-dependency)
-  ("r" org-deadsync-refresh-all)
-  ("c" org-deadsync-clear-overlays)
-  ("q" nil))
-
 ;;;###autoload
 (define-minor-mode org-deadsync-mode
   "Create deadline dependencies for org headings"
