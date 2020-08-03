@@ -176,7 +176,7 @@ ORG-DEADSYNC-MASTER."
 		'after-string org-deadsync-master-icon
 		'evaporate t)))))
 
-(defun org-deadsync--dependentsp ()
+(defun org-deadsync--dependents-p ()
   "Return non-nil if current entry has `org-deadsync' dependents."
   (when-let* ((master-id (org-entry-get (point) "ID")))
     (org-ql-select org-deadsync-files
@@ -208,7 +208,7 @@ ORG-DEADSYNC-MASTER."
       (org-deadsync-place-overlays-this-heading)
       (save-excursion
 	(org-id-goto master-id)
-	(unless (org-deadsync--dependentsp)
+	(unless (org-deadsync--dependents-p)
 	  (org-delete-property "ORG-DEADSYNC-MASTER")
 	  (org-deadsync-refresh-this-heading))))))
 
