@@ -47,6 +47,8 @@
 ;;
 ;;  [1] https://github.com/alphapapa/ts.el
 ;;  [2] https://github.com/alphapapa/org-ql/
+;;
+;; Or the generous assistance of alphapapa: https://github.com/alphapapa/
 
 ;;; License:
 
@@ -83,7 +85,8 @@
   :group 'org-deadsync)
 
 (defcustom org-deadsync-weekend-adjustment t
-  "If t, moves any deadline that falls on the weekend to the next weekday."
+  "If t, moves any deadline that falls on the weekend to the next weekday, or
+if using a negative offset, to the previous Friday."
   :type 'boolean)
 
 (defcustom org-deadsync-files (org-agenda-files)
@@ -99,7 +102,8 @@
   :type 'string)
 
 (defcustom org-deadsync-skip-dates '()
-  "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays."
+  "List of dates (strings in the form \"YYYY-MM-DD\") to exclude as possible deadlines, e.g., holidays, birthdays.
+If a deadline falls on this date, it will be moved forward to the next available date."
   :type 'list)
 
 ;;;; Variables
@@ -111,8 +115,13 @@
 ;;;; Functions
 
 (defun org-deadsync--ts-adjust (&rest adjustments)
-  "Wrapper for (ts-adjust) to allow arguments in the form, e.g., \"+3d\"; 
-accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"."
+  "Wrapper for `ts-adjust' to allow arguments in the form, e.g., \"+3d\"; 
+accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\"
+
+E.g.:
+ +4m -4d
+ +7d
+ +1y +1m +1d"
   (let* ((ts (-last-item adjustments))
 	 (adjustments (cl-loop for adj in (split-string (car (nbutlast adjustments)) " ")
                                for num = (string-to-number (substring adj 0 -1))
@@ -137,18 +146,15 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 	  (put-text-property start end 'read-only t-or-nil))))))
 
 (defun org-deadsync-clear-overlays-this-heading ()
+  "Clear "
   (interactive)
-  (let ((start (progn (outline-back-to-heading)
-		      (forward-line)
-		      (point)))
-	(end (progn
-	       (outline-back-to-heading)
-	       (re-search-forward (org-re-timestamp 'deadline)
-				  (line-end-position 2) t)
-	       (end-of-line)
-	       (point))))
-    (ov-clear 'after-string org-deadsync-lock-icon start end)
-    (ov-clear 'after-string org-deadsync-master-icon start end)))
+  (outline-back-to-heading)
+  (re-search-forward (org-re-timestamp 'deadline)
+		     (line-end-position 2) t)
+  (ov-clear 'after-string org-deadsync-lock-icon (match-beginning 0)
+	    (match-end 0))
+  (ov-clear 'after-string org-deadsync-master-icon (match-beginning 0)
+	    (match-end 0)))
 
 (defun org-deadsync-place-overlays-this-heading ()
   (interactive)
@@ -186,7 +192,7 @@ accepts a list of strings in the form \"[+/-][number][d(ay), m(onth), y(ear)]\".
 
 (defun org-deadsync--toggle-lock ()
   "Toggle whether the deadline text is locked."
-  (org-deadsync-lock-deadline (not (org-deadsync-deadline-locked-p))))
+  (org-deadsync-lock-deadline (not (org-deadsync--deadline-locked-p))))
 
 (defun org-deadsync-remove-dependency ()
   "Removes the dependency for the current heading"
