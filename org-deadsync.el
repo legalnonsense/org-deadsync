@@ -4,7 +4,7 @@
 
 ;; Author: Jeff Filipovits <jrfilipovits@gmail.com>
 ;; Url: https://github.com/legalnonsense/elgantt
-;; Version: 0.1-pre
+;; Version: 0.2-pre
 ;; Package-Requires: ((emacs "26.1") (org "9.0") (s "1.12.0") (org-ql "0.2-pre") (ts.el "0.2-pre"))
 ;; Keywords: Org, agenda, calendar, deadline, link
 
@@ -410,12 +410,11 @@ then adjust backward to the previous Friday."
     (define-key org-deadsync-mode-keymap (kbd "<S-up>") #'org-deadsync-org-shiftup)
     (define-key org-deadsync-mode-keymap (kbd "<S-down>") #'org-deadsync-org-shiftdown)
     (define-key org-deadsync-mode-keymap (kbd "<S-left>") #'org-deadsync-org-shiftleft)
-    org-deadsync-mode-keymap)
   (if org-deadsync-mode
       (progn 
 	(org-deadsync-refresh-all))
     (org-deadsync--clear-all)))
 
-(provide 'org-deadsync)
+  (provide 'org-deadsync)
 
 ;;; org-deadsync.el ends here
