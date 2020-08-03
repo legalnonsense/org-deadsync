@@ -360,6 +360,7 @@ then adjust backward to the previous Friday."
       (org-deadsync-refresh-dependents))))
 
 (defun org-deadsync-clear-overlays ()
+  "Clear all the deadsync overlays in the buffer." 
   (interactive)
   (ov-clear 'after-string org-deadsync-lock-icon (point-min) (point-max))
   (ov-clear 'after-string org-deadsync-master-icon (point-min) (point-max)))
