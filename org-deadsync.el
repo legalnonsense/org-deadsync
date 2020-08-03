@@ -410,7 +410,6 @@ then adjust backward to the previous Friday."
     (define-key org-deadsync-mode-keymap (kbd "<S-up>") 'org-deadsync-org-shiftup)
     (define-key org-deadsync-mode-keymap (kbd "<S-down>") 'org-deadsync-org-shiftdown)
     (define-key org-deadsync-mode-keymap (kbd "<S-left>") 'org-deadsync-org-shiftleft)
-    (define-key org-deadsync-mode-keymap (kbd "C-; d d") 'org-deadsync--hydra/body)
     org-deadsync-mode-keymap)
   (if org-deadsync-mode
       (progn 
