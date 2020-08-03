@@ -146,7 +146,7 @@ E.g.:
 	  (put-text-property start end 'read-only t-or-nil))))))
 
 (defun org-deadsync-clear-overlays-this-heading ()
-  "Clear "
+  "Clear the lock and key icons from this heading."
   (interactive)
   (outline-back-to-heading)
   (re-search-forward (org-re-timestamp 'deadline)
@@ -157,22 +157,24 @@ E.g.:
 	    (match-end 0)))
 
 (defun org-deadsync-place-overlays-this-heading ()
+  "Put the appropriate overlay (i.e., lock or key, or both) at
+this heading based on the properties ORG-DEADSYNC-ACTIVE and
+ORG-DEADSYNC-MASTER."
   (interactive)
   (org-deadsync-clear-overlays-this-heading)
-  (let ((start (progn
-		 (outline-back-to-heading)
-		 (re-search-forward (org-re-timestamp 'deadline)
-				    (line-end-position 2))
-		 (match-beginning 0)))
-	(end (match-end 0)))
-    (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
-      (ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
-	      'after-string org-deadsync-lock-icon
-	      'evaporate t))
-    (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
-      (ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
-	      'after-string org-deadsync-master-icon
-	      'evaporate t))))
+  (outline-back-to-heading)
+  (when(re-search-forward (org-re-timestamp 'deadline)
+			  (line-end-position 2))
+    (let ((start (match-beginning 0))
+	  (end (match-end 0)))
+      (when (org-entry-get (point) "ORG-DEADSYNC-ACTIVE" "t")
+	(ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
+		'after-string org-deadsync-lock-icon
+		'evaporate t))
+      (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
+	(ov-set (ov-regexp (org-re-timestamp 'deadline) start end)
+		'after-string org-deadsync-master-icon
+		'evaporate t)))))
 
 (defun org-deadsync--dependentsp ()
   "Return non-nil if current entry has `org-deadsync' dependents."
