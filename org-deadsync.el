@@ -298,7 +298,7 @@ ORG-DEADSYNC-MASTER."
 				(org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
 				(ts-parse-org (org-entry-get (point) "DEADLINE"))))
 	     (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
-	     (offset-negative-p (< (string-to-number offset) 0))
+	     (offset-negative-p (org-deadsync--negative-offset-p))
 	     (new-deadline (org-deadsync--ts-adjust offset master-deadline)))
 	(while (org-deadsync--skip-day-p new-deadline)
 	  (setq new-deadline (org-deadsync--skip-date-adjust new-deadline offset-negative-p))
