@@ -273,11 +273,19 @@ ORG-DEADSYNC-MASTER."
   (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
     (when-let ((master-id (org-entry-get (point) "ID")))
       (org-ql-select org-deadsync-files
-	  `(and (property "ORG-DEADSYNC-LINK" ,master-id)
-	    (property "ORG-DEADSYNC-ACTIVE" "t"))
+	`(and (property "ORG-DEADSYNC-LINK" ,master-id)
+	      (property "ORG-DEADSYNC-ACTIVE" "t"))
 	:action (lambda ()
 		  (org-deadsync-refresh-this-heading)
 		  (org-deadsync-refresh-dependents)))))) 
+
+(defun org-deadsync--negative-offset-p ()
+  "Determines whether something like +5d -4y +49m is a positive or negative offset."
+  (when-let* ((master-deadline (save-excursion (org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
+					       (ts-parse-org (org-entry-get (point) "DEADLINE"))))
+	      (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
+	      (offset-deadline (org-deadsync--ts-adjust offset master-deadline)))
+    (ts< offset-deadline master-deadline)))
 
 (defun org-deadsync-refresh-this-heading ()
   (interactive)
