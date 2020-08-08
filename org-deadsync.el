@@ -409,12 +409,12 @@ then adjust backward to the previous Friday."
   "Automatically update dependent deadlines"
   nil
   " DEADSYNC"
-  (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
+  (let ((org-deadsync-mode-map (make-sparse-keymap)))
     (define-key org-deadsync-mode-map (kbd "<S-right>") #'org-deadsync-org-shiftright)
     (define-key org-deadsync-mode-map (kbd "<S-up>") #'org-deadsync-org-shiftup)
     (define-key org-deadsync-mode-map (kbd "<S-down>") #'org-deadsync-org-shiftdown)
     (define-key org-deadsync-mode-map (kbd "<S-left>") #'org-deadsync-org-shiftleft)
-    org-deadsync-mode-keymap)
+    org-deadsync-mode-map)
   (if org-deadsync-mode
       (progn 
 	(org-deadsync-refresh-all))
