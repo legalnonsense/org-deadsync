@@ -410,10 +410,11 @@ then adjust backward to the previous Friday."
   nil
   " DEADSYNC"
   (let ((org-deadsync-mode-keymap (make-sparse-keymap)))
-    (define-key org-deadsync-mode-keymap (kbd "<S-right>") #'org-deadsync-org-shiftright)
-    (define-key org-deadsync-mode-keymap (kbd "<S-up>") #'org-deadsync-org-shiftup)
-    (define-key org-deadsync-mode-keymap (kbd "<S-down>") #'org-deadsync-org-shiftdown)
-    (define-key org-deadsync-mode-keymap (kbd "<S-left>") #'org-deadsync-org-shiftleft)
+    (define-key org-deadsync-mode-map (kbd "<S-right>") #'org-deadsync-org-shiftright)
+    (define-key org-deadsync-mode-map (kbd "<S-up>") #'org-deadsync-org-shiftup)
+    (define-key org-deadsync-mode-map (kbd "<S-down>") #'org-deadsync-org-shiftdown)
+    (define-key org-deadsync-mode-map (kbd "<S-left>") #'org-deadsync-org-shiftleft)
+    org-deadsync-mode-keymap)
   (if org-deadsync-mode
       (progn 
 	(org-deadsync-refresh-all))
