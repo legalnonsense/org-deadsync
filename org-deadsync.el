@@ -257,13 +257,26 @@ ORG-DEADSYNC-MASTER."
     (org-deadline nil "2000-01-01") ; dummy deadline in case one is there already
     (org-deadsync-refresh-this-heading)))
 
+(defun org-deadsync-load-all-overlays-and-text-props ()
+  (interactive)
+  (save-excursion 
+    (org-with-wide-buffer
+     (outline-show-all)
+     (org-ql-select org-deadsync-files
+       '(property "ORG-DEADSYNC-MASTER" "t")
+       :action (lambda ()
+		 (org-deadsync-place-overlays-this-heading)
+		 (org-deadsync-lock-deadline t)))))
+  (unless (org-before-first-heading-p)
+    (outline-hide-other)))
+
 (defun org-deadsync-refresh-all ()
   (interactive)
   (save-excursion 
     (org-with-wide-buffer
      (outline-show-all)
      (org-ql-select org-deadsync-files
-	 '(property "ORG-DEADSYNC-MASTER" "t")
+       '(property "ORG-DEADSYNC-MASTER" "t")
        :action (lambda ()
 		 (org-deadsync-refresh-this-heading)
 		 (org-deadsync-refresh-dependents)))))
@@ -420,7 +433,7 @@ then adjust backward to the previous Friday."
     org-deadsync-mode-map)
   (if org-deadsync-mode
       (progn 
-	(org-deadsync-refresh-all))
+	(org-deadsync-load-all-overlays-and-text-props))
     (org-deadsync--clear-all)))
 
   (provide 'org-deadsync)
