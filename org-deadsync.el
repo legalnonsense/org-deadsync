@@ -289,6 +289,7 @@ ORG-DEADSYNC-MASTER."
 	      (offset-deadline (org-deadsync--ts-adjust offset master-deadline)))
     (ts< offset-deadline master-deadline)))
 
+
 (defun org-deadsync-refresh-this-heading ()
   (interactive)
   (org-deadsync-place-overlays-this-heading)
@@ -298,7 +299,9 @@ ORG-DEADSYNC-MASTER."
       (org-deadsync-clear-overlays-this-heading) ;; Important to clear overlays before changing deadline
       (let* ((master-deadline (save-excursion    ;; otherwise, the overlays will appear in strange places
 				(org-id-goto (org-entry-get (point) "ORG-DEADSYNC-LINK"))
-				(ts-parse-org (org-entry-get (point) "DEADLINE"))))
+				(or (--when-let (org-entry-get (point) "CLOSED")
+				      (ts-parse-org it))
+				    (ts-parse-org (org-entry-get (point) "DEADLINE")))))
 	     (offset (org-entry-get (point) "ORG-DEADSYNC-OFFSET"))
 	     (offset-negative-p (org-deadsync--negative-offset-p))
 	     (new-deadline (org-deadsync--ts-adjust offset master-deadline)))

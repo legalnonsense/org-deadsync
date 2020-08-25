@@ -11,3 +11,4 @@ test.org
 /#README.org#
 *.el#
 /Q-testing.el
+/org-deadsync.elc
