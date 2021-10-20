@@ -135,28 +135,29 @@ E.g.:
 (defun org-deadsync-lock-deadline (t-or-nil)
   "Make deadline in current heading read-only if argument is non-nil"
   (interactive)
-  (save-excursion
-    (when (org-get-deadline-time (point))
-      (outline-back-to-heading)
-      ;; This should be found, so we want an error if it's not found
-      (re-search-forward (org-re-timestamp 'deadline)
-			 (line-end-position 2))
-      (let ((inhibit-read-only t)
-	    (start (match-beginning 0))
-	    (end (match-end 0)))
-	(put-text-property start end 'read-only t-or-nil)))))
+  nil)
+;; (save-excursion
+;;   (when (org-get-deadline-time (point))
+;;     (outline-back-to-heading)
+;;     ;; This should be found, so we want an error if it's not found
+;;     (re-search-forward (org-re-timestamp 'deadline)
+;; 			 (line-end-position 2))
+;;     (let ((inhibit-read-only t)
+;; 	    (start (match-beginning 0))
+;; 	    (end (match-end 0)))
+;; 	(put-text-property start end 'read-only t-or-nil)))))
 
 (defun org-deadsync-clear-overlays-this-heading ()
   "Clear the lock and key icons from this heading."
   (interactive)
   (save-excursion 
     (outline-back-to-heading)
-    (re-search-forward (org-re-timestamp 'deadline)
-		       (line-end-position 2) t)
-    (ov-clear 'after-string org-deadsync-lock-icon (match-beginning 0)
-	      (match-end 0))
-    (ov-clear 'after-string org-deadsync-master-icon (match-beginning 0)
-	      (match-end 0))))
+    (when (re-search-forward (org-re-timestamp 'deadline)
+			     (line-end-position 2) t)
+      (ov-clear 'after-string org-deadsync-lock-icon (match-beginning 0)
+		(match-end 0))
+      (ov-clear 'after-string org-deadsync-master-icon (match-beginning 0)
+		(match-end 0)))))
 
 (defun org-deadsync-place-overlays-this-heading ()
   "Put the appropriate overlay (i.e., lock or key, or both) at
@@ -181,6 +182,7 @@ ORG-DEADSYNC-MASTER."
 (defun org-deadsync--dependents-p ()
   "Return non-nil if current entry has `org-deadsync' dependents."
   (when-let* ((master-id (org-entry-get (point) "ID")))
+    (setq org-ql-cache (make-hash-table :weakness 'key))
     (org-ql-select org-deadsync-files
       `(and (property "ORG-DEADSYNC-LINK" ,master-id)
 	    (property "ORG-DEADSYNC-ACTIVE" "t")))))
@@ -259,22 +261,26 @@ ORG-DEADSYNC-MASTER."
 
 (defun org-deadsync-load-all-overlays-and-text-props ()
   (interactive)
-  (save-excursion 
-    (org-with-wide-buffer
-     (outline-show-all)
-     (org-ql-select org-deadsync-files
-       '(property "ORG-DEADSYNC-MASTER" "t")
-       :action (lambda ()
-		 (org-deadsync-place-overlays-this-heading)
-		 (org-deadsync-lock-deadline t)))))
-  (unless (org-before-first-heading-p)
-    (outline-hide-other)))
+  (save-excursion
+    (save-restriction
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (outline-show-all)
+       (setq org-ql-cache (make-hash-table :weakness 'key))
+       (org-ql-select org-deadsync-files
+	 '(property "ORG-DEADSYNC-MASTER" "t")
+	 :action (lambda ()
+		   (org-deadsync-place-overlays-this-heading)
+		   (org-deadsync-lock-deadline t)))))
+    (unless (org-before-first-heading-p)
+      (outline-hide-other))))
 
 (defun org-deadsync-refresh-all ()
   (interactive)
   (save-excursion 
     (org-with-wide-buffer
      (outline-show-all)
+     (setq org-ql-cache (make-hash-table :weakness 'key))
      (org-ql-select org-deadsync-files
        '(property "ORG-DEADSYNC-MASTER" "t")
        :action (lambda ()
@@ -287,6 +293,7 @@ ORG-DEADSYNC-MASTER."
   (interactive)
   (when (org-entry-get (point) "ORG-DEADSYNC-MASTER" "t")
     (when-let ((master-id (org-entry-get (point) "ID")))
+      (setq org-ql-cache (make-hash-table :weakness 'key))
       (org-ql-select org-deadsync-files
 	`(and (property "ORG-DEADSYNC-LINK" ,master-id)
 	      (property "ORG-DEADSYNC-ACTIVE" "t"))
@@ -350,6 +357,7 @@ then adjust backward to the previous Friday."
 
 (defun org-deadsync--lock-all (t-or-nil)
   (interactive)
+  (setq org-ql-cache (make-hash-table :weakness 'key))
   (org-ql-select org-deadsync-files
     '(property "ORG-DEADSYNC-ACTIVE" "t")
     :action (lambda ()
@@ -388,21 +396,22 @@ then adjust backward to the previous Friday."
 
 (defun org-deadsync-org-shiftdirection (direction)
   "Substitutes for org-shift<direction> when DEADSYNC mode activated."
-  (if (and (org-at-timestamp-p 'agenda)
-	   (save-excursion (beginning-of-line)
-			   (re-search-forward (org-re-timestamp 'deadline) nil t)))
-      (progn 
-	(if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
-		 (get-text-property (point) 'read-only)
-		 (yes-or-no-p "Do you want to deactivate this dependency?"))
-	    (org-deadsync-toggle-active))))
-  (pcase direction
-    (`down (org-shiftdown))
-    (`up (org-shiftup))
-    (`left (org-shiftleft))
-    (`right (org-shiftright)))
-  (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
-    (org-deadsync-refresh-dependents)))
+  (let ((inhibit-read-only t))
+    (if (and (org-at-timestamp-p 'agenda)
+	     (save-excursion (beginning-of-line)
+			     (re-search-forward (org-re-timestamp 'deadline) nil t)))
+	(progn 
+	  (if (and (string= (org-entry-get (point) "ORG-DEADSYNC-ACTIVE") "t")
+		   (get-text-property (point) 'read-only)
+		   (yes-or-no-p "Do you want to deactivate this dependency?"))
+	      (org-deadsync-toggle-active))))
+    (pcase direction
+      (`down (org-shiftdown))
+      (`up (org-shiftup))
+      (`left (org-shiftleft))
+      (`right (org-shiftright)))
+    (when (string= (org-entry-get (point) "ORG-DEADSYNC-MASTER") "t")
+      (org-deadsync-refresh-dependents))))
 
 (defun org-deadsync-org-shiftleft ()
   (interactive)
@@ -432,7 +441,7 @@ then adjust backward to the previous Friday."
     (define-key org-deadsync-mode-map (kbd "<S-left>") #'org-deadsync-org-shiftleft)
     org-deadsync-mode-map)
   (if org-deadsync-mode
-      (progn 
+      (progn	
 	(org-deadsync-load-all-overlays-and-text-props))
     (org-deadsync--clear-all)))
 
