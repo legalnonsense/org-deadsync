@@ -261,18 +261,15 @@ ORG-DEADSYNC-MASTER."
 
 (defun org-deadsync-load-all-overlays-and-text-props ()
   (interactive)
-  (save-excursion
-    (save-restriction
-      (org-with-wide-buffer
-       (goto-char (point-min))
-       (setq org-ql-cache (make-hash-table :weakness 'key))
-       (org-ql-select org-deadsync-files
-	 '(property "ORG-DEADSYNC-MASTER" "t")
-	 :action (lambda ()
-		   (org-deadsync-place-overlays-this-heading)))))
-    ;;(org-deadsync-lock-deadline t)))))
-    (unless (org-before-first-heading-p)
-      (outline-hide-other))))
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (setq org-ql-cache (make-hash-table :weakness 'key))
+   (org-ql-select org-deadsync-files
+     '(property "ORG-DEADSYNC-MASTER" "t")
+     :action #'org-deadsync-place-overlays-this-heading)
+   ;;(org-deadsync-lock-deadline t)))))
+   (unless (org-before-first-heading-p)
+     (outline-hide-other))))
 
 (defun org-deadsync-refresh-all ()
   (interactive)
