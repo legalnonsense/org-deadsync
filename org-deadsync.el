@@ -433,11 +433,10 @@ then adjust backward to the previous Friday."
     (define-key org-deadsync-mode-map (kbd "<S-up>") #'org-deadsync-org-shiftup)
     (define-key org-deadsync-mode-map (kbd "<S-down>") #'org-deadsync-org-shiftdown)
     (define-key org-deadsync-mode-map (kbd "<S-left>") #'org-deadsync-org-shiftleft)
-    org-deadsync-mode-map))
-;; (if org-deadsync-mode
-;;     (progn	
-;; 	(org-deadsync-load-all-overlays-and-text-props))
-;;   (org-deadsync--clear-all)))
+    org-deadsync-mode-map)
+  (if org-deadsync-mode
+      t
+    (org-deadsync--clear-all)))
 
 (provide 'org-deadsync)
 
